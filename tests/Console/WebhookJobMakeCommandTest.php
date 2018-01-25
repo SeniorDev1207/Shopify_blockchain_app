@@ -1,18 +1,16 @@
-<?php
+<?php namespace OhMyBrew\ShopifyApp\Test\Console;
 
-namespace OhMyBrew\ShopifyApp\Test\Console;
-
-use OhMyBrew\ShopifyApp\Console\WebhookJobMakeCommand;
+use \ReflectionMethod;
 use OhMyBrew\ShopifyApp\Test\TestCase;
-use ReflectionMethod;
 use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\Console\Tester\CommandTester;
+use OhMyBrew\ShopifyApp\Console\WebhookJobMakeCommand;
 
 class WebhookJobMakeCommandTest extends TestCase
 {
     public function testItShouldRun()
     {
-        $application = new ConsoleApplication();
+        $application = new ConsoleApplication;
 
         $testedCommand = $this->app->make(WebhookJobMakeCommand::class);
         $testedCommand->setLaravel($this->app);
@@ -23,12 +21,12 @@ class WebhookJobMakeCommandTest extends TestCase
 
         $commandTester->execute([
             'command' => $command->getName(),
-            'name'    => 'OrdersCreateJob',
-            'topic'   => 'orders/create',
+            'name' => 'OrdersCreateJob',
+            'topic' => 'orders/create'
         ]);
 
         $output = $commandTester->getDisplay();
-
+ 
         $this->assertContains("Don't forget to register the webhook in config/shopify-app.php", $output);
         $this->assertContains("'address' => 'https://your-domain.com/webhook/orders-create'", $output);
         $this->assertContains("'topic' => 'orders/create',", $output);
@@ -36,7 +34,7 @@ class WebhookJobMakeCommandTest extends TestCase
 
     public function testShouldMakeUrlFromName()
     {
-        $application = new ConsoleApplication();
+        $application = new ConsoleApplication;
         $testedCommand = $this->app->make(WebhookJobMakeCommand::class);
         $testedCommand->setLaravel($this->app);
         $application->add($testedCommand);
@@ -49,7 +47,7 @@ class WebhookJobMakeCommandTest extends TestCase
         $result = $method->invoke($command, 'OrdersCreateJob');
         $result2 = $method->invoke($command, 'OrdersCreate');
         $result3 = $method->invoke($command, 'OrdersCreateCustomJob');
-
+        
         $this->assertEquals($result, 'orders-create');
         $this->assertEquals($result2, 'orders-create');
         $this->assertEquals($result3, 'orders-create-custom');
@@ -57,7 +55,7 @@ class WebhookJobMakeCommandTest extends TestCase
 
     public function testShouldReturnStub()
     {
-        $application = new ConsoleApplication();
+        $application = new ConsoleApplication;
         $testedCommand = $this->app->make(WebhookJobMakeCommand::class);
         $testedCommand->setLaravel($this->app);
         $application->add($testedCommand);
@@ -68,7 +66,7 @@ class WebhookJobMakeCommandTest extends TestCase
         $method->setAccessible(true);
 
         $result = $method->invoke($command);
-
+        
         $this->assertContains('/stubs/webhook-job.stub', $result);
     }
 }

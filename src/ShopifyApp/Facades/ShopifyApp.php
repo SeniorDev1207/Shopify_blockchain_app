@@ -1,6 +1,4 @@
-<?php
-
-namespace OhMyBrew\ShopifyApp\Facades;
+<?php namespace OhMyBrew\ShopifyApp\Facades;
 
 use Illuminate\Support\Facades\Facade;
 

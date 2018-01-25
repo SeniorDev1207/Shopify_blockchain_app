@@ -1,13 +1,12 @@
-<?php
+<?php namespace OhMyBrew\ShopifyApp\Test\Jobs;
 
-namespace OhMyBrew\ShopifyApp\Test\Jobs;
-
+use \ReflectionObject;
+use \ReflectionMethod;
+use Illuminate\Support\Facades\Queue;
 use OhMyBrew\ShopifyApp\Jobs\WebhookInstaller;
 use OhMyBrew\ShopifyApp\Models\Shop;
-use OhMyBrew\ShopifyApp\Test\Stubs\ApiStub;
 use OhMyBrew\ShopifyApp\Test\TestCase;
-use ReflectionMethod;
-use ReflectionObject;
+use OhMyBrew\ShopifyApp\Test\Stubs\ApiStub;
 
 class WebhookInstallerJobTest extends TestCase
 {
@@ -19,13 +18,13 @@ class WebhookInstallerJobTest extends TestCase
         $this->shop = Shop::find(1);
         $this->webhooks = [
             [
-                'topic'   => 'orders/create',
-                'address' => 'https://localhost/webhooks/orders-create',
-            ],
+                'topic' => 'orders/create',
+                'address' => 'https://localhost/webhooks/orders-create'
+            ]
         ];
 
         // Stub with our API
-        config(['shopify-app.api_class' => new ApiStub()]);
+        config(['shopify-app.api_class' => new ApiStub]);
     }
 
     public function testJobAcceptsLoad()
@@ -53,22 +52,22 @@ class WebhookInstallerJobTest extends TestCase
             $job,
             [
                 // Existing webhooks
-                (object) ['address' => 'http://localhost/webhooks/test'],
+                (object) ['address' => 'http://localhost/webhooks/test']
             ],
             [
                 // Defined webhooks in config
-                'address' => 'http://localhost/webhooks/test',
+                'address' => 'http://localhost/webhooks/test'
             ]
         );
         $result_2 = $method->invoke(
             $job,
             [
                 // Existing webhooks
-                (object) ['address' => 'http://localhost/webhooks/test'],
+                (object) ['address' => 'http://localhost/webhooks/test']
             ],
             [
                 // Defined webhook in config
-                'address' => 'http://localhost/webhooks/test-two',
+                'address' => 'http://localhost/webhooks/test-two'
             ]
         );
 
@@ -83,16 +82,16 @@ class WebhookInstallerJobTest extends TestCase
 
         // Webhook JSON comes from fixture JSON which matches $this->webhooks
         // so this should be 0
-        $this->assertEquals(0, count($created));
+        $this->assertEquals(0, sizeof($created));
     }
 
     public function testJobShouldCreateWebhooks()
     {
         $webhooks = [
             [
-                'topic'   => 'orders/create',
-                'address' => 'https://localhost/webhooks/orders-create-two',
-            ],
+                'topic' => 'orders/create',
+                'address' => 'https://localhost/webhooks/orders-create-two'
+            ]
         ];
 
         $job = new WebhookInstaller($this->shop, $webhooks);
@@ -100,7 +99,7 @@ class WebhookInstallerJobTest extends TestCase
 
         // $webhooks is new webhooks which does not exist in the JSON fixture
         // for webhooks, so it should create it
-        $this->assertEquals(1, count($created));
+        $this->assertEquals(1, sizeof($created));
         $this->assertEquals($webhooks[0], $created[0]);
     }
 }

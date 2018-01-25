@@ -1,15 +1,14 @@
-<?php
+<?php namespace OhMyBrew\ShopifyApp\Test\Controllers;
 
-namespace OhMyBrew\ShopifyApp\Test\Controllers;
-
+use \ReflectionMethod;
 use Illuminate\Support\Facades\Queue;
 use OhMyBrew\ShopifyApp\Controllers\AuthController;
-use OhMyBrew\ShopifyApp\Jobs\ScripttagInstaller;
 use OhMyBrew\ShopifyApp\Jobs\WebhookInstaller;
+use OhMyBrew\ShopifyApp\Jobs\ScripttagInstaller;
+use OhMyBrew\ShopifyApp\Facades\ShopifyApp;
 use OhMyBrew\ShopifyApp\Models\Shop;
-use OhMyBrew\ShopifyApp\Test\Stubs\ApiStub;
 use OhMyBrew\ShopifyApp\Test\TestCase;
-use ReflectionMethod;
+use OhMyBrew\ShopifyApp\Test\Stubs\ApiStub;
 
 require_once __DIR__.'/../Stubs/AfterAuthenticateJobStub.php';
 
@@ -22,14 +21,14 @@ class AuthControllerTest extends TestCase
         // HMAC
         $this->hmac = 'a7448f7c42c9bc025b077ac8b73e7600b6f8012719d21cbeb88db66e5dbbd163';
         $this->hmacParams = [
-            'hmac'      => $this->hmac,
-            'shop'      => 'example.myshopify.com',
-            'code'      => '1234678',
-            'timestamp' => '1337178173',
+            'hmac' => $this->hmac,
+            'shop' => 'example.myshopify.com',
+            'code' => '1234678',
+            'timestamp' => '1337178173'
         ];
 
         // Stub in our API class
-        config(['shopify-app.api_class' => new ApiStub()]);
+        config(['shopify-app.api_class' => new ApiStub]);
     }
 
     public function testLoginTest()
@@ -41,7 +40,7 @@ class AuthControllerTest extends TestCase
     public function testAuthRedirectsBackToLoginWhenNoShop()
     {
         $response = $this->post('/authenticate');
-
+        
         $response->assertStatus(302);
         $this->assertEquals('http://localhost/login', $response->headers->get('location'));
     }
@@ -98,17 +97,17 @@ class AuthControllerTest extends TestCase
     public function testAuthenticateDoesFiresJobs()
     {
         Queue::fake();
-
+        
         config(['shopify-app.webhooks' => [
             [
-                'topic'   => 'orders/create',
-                'address' => 'https://localhost/webhooks/orders-create',
-            ],
+                'topic' => 'orders/create',
+                'address' => 'https://localhost/webhooks/orders-create'
+            ]
         ]]);
         config(['shopify-app.scripttags' => [
             [
-                'src' => 'https://localhost/scripts/file.js',
-            ],
+                'src' => 'https://localhost/scripts/file.js'
+            ]
         ]]);
 
         $this->call('get', '/authenticate', $this->hmacParams);
@@ -123,13 +122,13 @@ class AuthControllerTest extends TestCase
 
         $jobClass = \App\Jobs\AfterAuthenticateJob::class;
         config(['shopify-app.after_authenticate_job' => [
-            'job'    => $jobClass,
-            'inline' => true,
+            'job' => $jobClass,
+            'inline' => true
         ]]);
 
         $method = new ReflectionMethod(AuthController::class, 'afterAuthenticateJob');
         $method->setAccessible(true);
-        $result = $method->invoke(new AuthController());
+        $result = $method->invoke(new AuthController);
 
         $this->assertEquals(true, $result);
         Queue::assertNotPushed($jobClass); // since inline == true
@@ -141,13 +140,13 @@ class AuthControllerTest extends TestCase
 
         $jobClass = \App\Jobs\AfterAuthenticateJob::class;
         config(['shopify-app.after_authenticate_job' => [
-            'job'    => $jobClass,
-            'inline' => false,
+            'job' => $jobClass,
+            'inline' => false
         ]]);
 
         $method = new ReflectionMethod(AuthController::class, 'afterAuthenticateJob');
         $method->setAccessible(true);
-        $result = $method->invoke(new AuthController());
+        $result = $method->invoke(new AuthController);
 
         $this->assertEquals(true, $result);
         Queue::assertPushed($jobClass); // since inline == false
@@ -162,7 +161,7 @@ class AuthControllerTest extends TestCase
 
         $method = new ReflectionMethod(AuthController::class, 'afterAuthenticateJob');
         $method->setAccessible(true);
-        $result = $method->invoke(new AuthController());
+        $result = $method->invoke(new AuthController);
 
         $this->assertEquals(false, $result);
         Queue::assertNotPushed($jobClass);

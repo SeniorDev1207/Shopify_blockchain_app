@@ -1,11 +1,9 @@
-<?php
+<?php namespace OhMyBrew\ShopifyApp\Test\Controllers;
 
-namespace OhMyBrew\ShopifyApp\Test\Controllers;
-
+use \ReflectionMethod;
 use Illuminate\Support\Facades\Queue;
-use OhMyBrew\ShopifyApp\Controllers\WebhookController;
 use OhMyBrew\ShopifyApp\Test\TestCase;
-use ReflectionMethod;
+use OhMyBrew\ShopifyApp\Controllers\WebhookController;
 
 require_once __DIR__.'/../Stubs/OrdersCreateJobStub.php';
 
@@ -16,7 +14,7 @@ class WebhookControllerTest extends TestCase
         parent::setUp();
 
         $this->headers = [
-            'HTTP_CONTENT_TYPE'          => 'application/json',
+            'HTTP_CONTENT_TYPE' => 'application/json',
             'HTTP_X_SHOPIFY_SHOP_DOMAIN' => 'example.myshopify.com',
             'HTTP_X_SHOPIFY_HMAC_SHA256' => 'hDJhTqHOY7d5WRlbDl4ehGm/t4kOQKtR+5w6wm+LBQw=', // Matches fixture data and API secret
         ];
@@ -40,6 +38,7 @@ class WebhookControllerTest extends TestCase
         Queue::assertPushed(\App\Jobs\OrdersCreateJob::class);
     }
 
+
     public function testShouldReturnErrorResponseOnFailure()
     {
         $response = $this->call(
@@ -57,14 +56,14 @@ class WebhookControllerTest extends TestCase
 
     public function testShouldCaseTypeToClass()
     {
-        $controller = new WebhookController();
+        $controller = new WebhookController;
         $method = new ReflectionMethod(WebhookController::class, 'getJobClassFromType');
         $method->setAccessible(true);
 
         $types = [
-            'orders-create'     => 'OrdersCreateJob',
+            'orders-create' => 'OrdersCreateJob',
             'super-duper-order' => 'SuperDuperOrderJob',
-            'order'             => 'OrderJob',
+            'order' => 'OrderJob'
         ];
 
         foreach ($types as $type => $className) {
@@ -90,7 +89,8 @@ class WebhookControllerTest extends TestCase
         Queue::assertPushed(\App\Jobs\OrdersCreateJob::class, function ($job) {
             return $job->shopDomain === 'example.myshopify.com'
                    && $job->data instanceof \stdClass
-                   && $job->data->email === 'jon@doe.ca';
+                   && $job->data->email === 'jon@doe.ca'
+            ;
         });
     }
 }

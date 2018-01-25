@@ -1,11 +1,10 @@
-<?php
+<?php namespace OhMyBrew\ShopifyApp\Test;
 
-namespace OhMyBrew\ShopifyApp\Test;
-
-use OhMyBrew\ShopifyApp\Models\Shop;
 use OhMyBrew\ShopifyApp\ShopifyApp;
+use OhMyBrew\ShopifyApp\Models\Shop;
+use OhMyBrew\ShopifyApp\Test\Stubs\ShopModelStub;
 
-class ShopifyAppTest extends TestCase
+class ShopifyAppControllerTest extends TestCase
 {
     public function setUp()
     {

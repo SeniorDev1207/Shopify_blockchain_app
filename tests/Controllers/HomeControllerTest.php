@@ -1,9 +1,7 @@
-<?php
+<?php namespace OhMyBrew\ShopifyApp\Test\Controllers;
 
-namespace OhMyBrew\ShopifyApp\Test\Controllers;
-
-use OhMyBrew\ShopifyApp\Test\Stubs\ApiStub;
 use OhMyBrew\ShopifyApp\Test\TestCase;
+use OhMyBrew\ShopifyApp\Test\Stubs\ApiStub;
 
 class HomeControllerTest extends TestCase
 {
@@ -12,7 +10,7 @@ class HomeControllerTest extends TestCase
         parent::setUp();
 
         // Stub in our API class
-        config(['shopify-app.api_class' => new ApiStub()]);
+        config(['shopify-app.api_class' => new ApiStub]);
     }
 
     public function testNoShopSessionShouldRedirectToAuthenticate()
@@ -27,6 +25,7 @@ class HomeControllerTest extends TestCase
         $response = $this->call('get', '/', ['shop' => 'example-different-shop.myshopify.com']);
         $this->assertEquals(true, strpos($response->content(), 'Redirecting to http://localhost/authenticate') !== false);
     }
+
 
     public function testShopWithSessionShouldLoad()
     {

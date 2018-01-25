@@ -1,12 +1,10 @@
-<?php
+<?php namespace OhMyBrew\ShopifyApp\Test\Facades;
 
-namespace OhMyBrew\ShopifyApp\Test\Facades;
-
+use \ReflectionMethod;
 use OhMyBrew\ShopifyApp\Facades\ShopifyApp;
 use OhMyBrew\ShopifyApp\Test\TestCase;
-use ReflectionMethod;
 
-class ShopAppFacadeTest extends TestCase
+class ShopifyAppFacadeTest extends TestCase
 {
     public function testBasic()
     {

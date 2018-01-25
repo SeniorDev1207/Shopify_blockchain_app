@@ -1,6 +1,4 @@
-<?php
-
-namespace OhMyBrew\ShopifyApp\Middleware;
+<?php namespace OhMyBrew\ShopifyApp\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
@@ -9,7 +7,7 @@ use OhMyBrew\ShopifyApp\Facades\ShopifyApp;
 class AuthShop
 {
     /**
-     * Handle an incoming request.
+     * Handle an incoming request
      *
      * @param \Illuminate\Http\Request $request
      * @param \Closure                 $next
@@ -25,7 +23,6 @@ class AuthShop
         if ($shop === null || ($shopParam && $shopParam !== $shop->shopify_domain) === true) {
             // Either no shop session or shops do not match
             session()->forget('shopify_domain');
-
             return redirect()->route('authenticate')->with('shop', $shopParam);
         }
 

@@ -80,6 +80,7 @@ return [
 
     'api_class' => env('SHOPIFY_API_CLASS', \OhMyBrew\BasicShopifyAPI::class),
 
+
     /*
     |--------------------------------------------------------------------------
     | Shopify "MyShopify" domain
@@ -101,7 +102,7 @@ return [
     |
     */
 
-    'billing_enabled' => (bool) env('SHOPIFY_BILLING_ENABLED', false),
+    'billing_enabled' => (boolean) env('SHOPIFY_BILLING_ENABLED', false),
 
     /*
     |--------------------------------------------------------------------------
@@ -158,7 +159,7 @@ return [
     |
     */
 
-    'billing_test' => (bool) env('SHOPIFY_BILLING_TEST', false),
+    'billing_test' => (boolean) env('SHOPIFY_BILLING_TEST', false),
 
     /*
     |--------------------------------------------------------------------------

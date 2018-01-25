@@ -1,6 +1,4 @@
-<?php
-
-namespace OhMyBrew\ShopifyApp;
+<?php namespace OhMyBrew\ShopifyApp;
 
 use Illuminate\Foundation\Application;
 use OhMyBrew\ShopifyApp\Models\Shop;
@@ -8,14 +6,14 @@ use OhMyBrew\ShopifyApp\Models\Shop;
 class ShopifyApp
 {
     /**
-     * Laravel application.
+     * Laravel application
      *
      * @var \Illuminate\Foundation\Application
      */
     public $app;
 
     /**
-     * The current shop.
+     * The current shop
      *
      * @var \OhMyBrew\ShopifyApp\Models\Shop
      */
@@ -54,14 +52,14 @@ class ShopifyApp
     }
 
     /**
-     * Gets an API instance.
+     * Gets an API instance
      *
      * @return object
      */
     public function api()
     {
         $apiClass = config('shopify-app.api_class');
-        $api = new $apiClass();
+        $api = new $apiClass;
         $api->setApiKey(config('shopify-app.api_key'));
         $api->setApiSecret(config('shopify-app.api_secret'));
 
@@ -78,7 +76,7 @@ class ShopifyApp
     public function sanitizeShopDomain($domain)
     {
         if (empty($domain)) {
-            return;
+            return null;
         }
 
         $configEndDomain = config('shopify-app.myshopify_domain');
