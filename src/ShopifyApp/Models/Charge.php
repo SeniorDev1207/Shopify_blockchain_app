@@ -146,7 +146,7 @@ class Charge extends Model
     /**
      * Checks if the charge is "active" (non-API check).
      *
-     * @return bool
+     * @return boolean
      */
     public function isOngoing()
     {

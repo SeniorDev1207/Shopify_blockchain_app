@@ -4,12 +4,13 @@ namespace OhMyBrew\ShopifyApp\Test\Jobs;
 
 use Carbon\Carbon;
 use OhMyBrew\ShopifyApp\Jobs\AppUninstalledJob;
-use OhMyBrew\ShopifyApp\Models\Charge;
 use OhMyBrew\ShopifyApp\Models\Shop;
+use OhMyBrew\ShopifyApp\Models\Charge;
 use OhMyBrew\ShopifyApp\Test\TestCase;
+use ReflectionMethod;
 use ReflectionObject;
 
-class AppUninstalledJobTest extends TestCase
+class AppUninstalledJobJobTest extends TestCase
 {
     public function setup()
     {
@@ -37,6 +38,9 @@ class AppUninstalledJobTest extends TestCase
         $this->assertEquals($this->shop->shopify_domain, $refShop->getValue($job)->shopify_domain);
     }
 
+   /**
+    * @runInSeparateProcess
+    */
     public function testJobSoftDeletesShopAndCharges()
     {
         // Create a new charge to test against
