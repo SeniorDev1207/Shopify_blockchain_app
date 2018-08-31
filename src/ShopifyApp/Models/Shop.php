@@ -5,7 +5,6 @@ namespace OhMyBrew\ShopifyApp\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OhMyBrew\ShopifyApp\Facades\ShopifyApp;
-use OhMyBrew\ShopifyApp\Scopes\NamespaceScope;
 
 class Shop extends Model
 {
@@ -20,7 +19,6 @@ class Shop extends Model
         'shopify_domain',
         'shopify_token',
         'grandfathered',
-        'namespace',
     ];
 
     /**
@@ -36,18 +34,6 @@ class Shop extends Model
      * @var object
      */
     protected $api;
-
-    /**
-     * The "booting" method of the model.
-     *
-     * @return void
-     */
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::addGlobalScope(new NamespaceScope());
-    }
 
     /**
      * Creates or returns an instance of API for the shop.
