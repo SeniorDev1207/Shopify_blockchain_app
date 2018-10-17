@@ -5,7 +5,6 @@ namespace OhMyBrew\ShopifyApp\Test\Jobs;
 use Carbon\Carbon;
 use OhMyBrew\ShopifyApp\Jobs\AppUninstalledJob;
 use OhMyBrew\ShopifyApp\Models\Charge;
-use OhMyBrew\ShopifyApp\Models\Plan;
 use OhMyBrew\ShopifyApp\Models\Shop;
 use OhMyBrew\ShopifyApp\Test\TestCase;
 use ReflectionObject;
@@ -19,7 +18,6 @@ class AppUninstalledJobTest extends TestCase
         // Isolated shop
         $this->shop = new Shop();
         $this->shop->shopify_domain = 'example-isolated.myshopify.com';
-        $this->shop->plan_id = Plan::find(1)->id;
         $this->shop->save();
 
         // Get the data
@@ -81,8 +79,7 @@ class AppUninstalledJobTest extends TestCase
         $this->assertFalse($this->shop->hasCharges());
         $this->assertEquals($charge->charge_id, $lastCharge->charge_id);
         $this->assertEquals('cancelled', $lastCharge->status);
-        $this->assertNull($this->shop->plan);
-        $this->assertNull($this->shop->shopify_token);
+        $this->assertEquals(null, $this->shop->shopify_token);
     }
 
     public function testJobDoesNothingForUnknownShop()

@@ -77,7 +77,6 @@ class AppUninstalledJob implements ShouldQueue
     protected function cleanShop()
     {
         $this->shop->shopify_token = null;
-        $this->shop->plan_id = null;
         $this->shop->save();
     }
 
@@ -119,6 +118,7 @@ class AppUninstalledJob implements ShouldQueue
      */
     protected function findShop()
     {
-        return Shop::where(['shopify_domain' => $this->shopDomain])->first();
+        $shopModel = config('shopify-app.shop_model');
+        return $shopModel::where(['shopify_domain' => $this->shopDomain])->first();
     }
 }
