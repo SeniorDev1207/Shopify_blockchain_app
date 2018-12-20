@@ -2,12 +2,6 @@
 
 namespace OhMyBrew\ShopifyApp\Traits;
 
-use Illuminate\Support\Facades\Request;
-use Illuminate\Support\Facades\Response;
-
-/**
- * Responsible for handling incoming webhook requests.
- */
 trait WebhookControllerTrait
 {
     /**
@@ -19,13 +13,29 @@ trait WebhookControllerTrait
      */
     public function handle($type)
     {
-        // Get the job class and dispatch
-        $jobClass = '\\App\\Jobs\\'.str_replace('-', '', ucwords($type, '-')).'Job';
-        $jobClass::dispatch(
-            Request::header('x-shopify-shop-domain'),
-            json_decode(Request::getContent())
-        );
+        $classPath = $this->getJobClassFromType($type);
+        if (!class_exists($classPath)) {
+            // Can not find a job for this webhook type
+            abort(500, "Missing webhook job: {$classPath}");
+        }
 
-        return Response::make('', 201);
+        // Dispatch
+        $shopDomain = request()->header('x-shopify-shop-domain');
+        $data = json_decode(request()->getContent());
+        dispatch(new $classPath($shopDomain, $data));
+
+        return response('', 201);
+    }
+
+    /**
+     * Converts type into a class string.
+     *
+     * @param string $type The type of webhook
+     *
+     * @return string
+     */
+    protected function getJobClassFromType($type)
+    {
+        return '\\App\\Jobs\\'.str_replace('-', '', ucwords($type, '-')).'Job';
     }
 }

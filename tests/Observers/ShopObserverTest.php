@@ -2,7 +2,7 @@
 
 namespace OhMyBrew\ShopifyApp\Test\Observers;
 
-use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Event;
 use OhMyBrew\ShopifyApp\Models\Shop;
 use OhMyBrew\ShopifyApp\Test\TestCase;
 
@@ -10,18 +10,23 @@ class ShopObserverTest extends TestCase
 {
     public function testObserverAddsNamespace()
     {
-        Config::set('shopify-app.namespace', 'shopify-test-namespace');
+        // Need a better way to test... event faking not working...
+        config(['shopify-app.namespace' => 'shopify-test-namespace']);
 
-        $shop = factory(Shop::class)->create();
+        $shop = new Shop();
+        $shop->shopify_domain = 'observer.myshopify.com';
+        $shop->save();
 
         $this->assertEquals('shopify-test-namespace', $shop->namespace);
     }
 
     public function testObserverSetsFreemiumFlag()
     {
-        Config::set('shopify-app.billing_freemium_enabled', true);
+        config(['shopify-app.billing_freemium_enabled' => true]);
 
-        $shop = factory(Shop::class)->create();
+        $shop = new Shop();
+        $shop->shopify_domain = 'observer-freemium.myshopify.com';
+        $shop->save();
 
         $this->assertTrue($shop->isFreemium());
     }

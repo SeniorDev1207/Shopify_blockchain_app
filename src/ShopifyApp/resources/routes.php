@@ -1,7 +1,5 @@
 <?php
 
-use OhMyBrew\ShopifyApp\Models\Plan;
-
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -10,17 +8,6 @@ use OhMyBrew\ShopifyApp\Models\Plan;
 | All the routes for the Shopify App setup.
 |
 */
-
-// Bind the billing plan to an actual plan
-Route::bind('billingPlan', function ($value) {
-    if ($value === null) {
-        // Find the on-install plan
-        return Plan::where('on_install', true)->first();
-    }
-
-    // Find the plan passed to the method
-    return Plan::where('id', $value)->first();
-});
 
 Route::group(['middleware' => ['web']], function () {
     /*
@@ -80,10 +67,10 @@ Route::group(['middleware' => ['web']], function () {
     */
 
     Route::get(
-        '/billing/{billingPlan?}',
+        '/billing/{planId?}',
         'OhMyBrew\ShopifyApp\Controllers\BillingController@index'
     )
-    ->where('billingPlan', '^([0-9]+|)$')
+    ->where('planId', '^([0-9]+|)$')
     ->name('billing');
 
     /*
@@ -96,10 +83,10 @@ Route::group(['middleware' => ['web']], function () {
     */
 
     Route::get(
-        '/billing/process/{billingPlan?}',
+        '/billing/process/{planId?}',
         'OhMyBrew\ShopifyApp\Controllers\BillingController@process'
     )
-    ->where('billingPlan', '^([0-9]+|)$')
+    ->where('planId', '^([0-9]+|)$')
     ->name('billing.process');
 
     /*

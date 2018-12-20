@@ -2,9 +2,6 @@
 
 namespace OhMyBrew\ShopifyApp\Test\Controllers;
 
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Session;
-use OhMyBrew\ShopifyApp\Models\Shop;
 use OhMyBrew\ShopifyApp\Test\Stubs\ApiStub;
 use OhMyBrew\ShopifyApp\Test\TestCase;
 
@@ -15,28 +12,40 @@ class HomeControllerTest extends TestCase
         parent::setUp();
 
         // Stub in our API class
-        Config::set('shopify-app.api_class', new ApiStub());
+        config(['shopify-app.api_class' => new ApiStub()]);
+
+        // Shop for all tests
+        session(['shopify_domain' => 'example.myshopify.com']);
     }
 
-    public function testHomeRouteWithESDK()
+    public function testNoShopSessionShouldRedirectToAuthenticate()
     {
-        $shop = factory(Shop::class)->create();
-        Session::put('shopify_domain', $shop->shopify_domain);
+        // Kill the session
+        session()->forget('shopify_domain');
 
+        $response = $this->call('get', '/', ['shop' => 'example.myshopify.com']);
+        $this->assertTrue(strpos($response->content(), 'Redirecting to http://localhost/authenticate') !== false);
+    }
+
+    public function testWithMismatchedShopsShouldRedirectToAuthenticate()
+    {
+        $response = $this->call('get', '/', ['shop' => 'example-different-shop.myshopify.com']);
+        $this->assertTrue(strpos($response->content(), 'Redirecting to http://localhost/authenticate') !== false);
+    }
+
+    public function testShopWithSessionShouldLoad()
+    {
         $response = $this->get('/');
-        $response->assertStatus(200);
 
+        $response->assertStatus(200);
         $this->assertTrue(strpos($response->content(), "apiKey: ''") !== false);
-        $this->assertTrue(strpos($response->content(), "shopOrigin: 'https://{$shop->shopify_domain}'") !== false);
+        $this->assertTrue(strpos($response->content(), "shopOrigin: 'https://example.myshopify.com'") !== false);
     }
 
-    public function testHomeRouteWithNoESDK()
+    public function testShopWithSessionAndDisabledEsdkShouldLoad()
     {
-        $shop = factory(Shop::class)->create();
-        Session::put('shopify_domain', $shop->shopify_domain);
-
-        // Turn off ESDK
-        Config::set('shopify-app.esdk_enabled', false);
+        // Tuen off ESDK
+        config(['shopify-app.esdk_enabled' => false]);
 
         $response = $this->get('/');
 

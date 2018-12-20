@@ -3,13 +3,8 @@
 namespace OhMyBrew\ShopifyApp;
 
 use Illuminate\Foundation\Application;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Session;
 use OhMyBrew\ShopifyApp\Models\Shop;
 
-/**
- * The base "helper" class for this package.
- */
 class ShopifyApp
 {
     /**
@@ -41,16 +36,14 @@ class ShopifyApp
     /**
      * Gets/sets the current shop.
      *
-     * @param string|null $shopDomain
-     *
-     * @return \OhMyBrew\ShopifyApp\Models\Shop
+     * @return \OhMyBrew\Models\Shop
      */
-    public function shop(string $shopDomain = null)
+    public function shop()
     {
-        $shopifyDomain = $shopDomain ? $this->sanitizeShopDomain($shopDomain) : Session::get('shopify_domain');
+        $shopifyDomain = session('shopify_domain');
         if (!$this->shop && $shopifyDomain) {
             // Grab shop from database here
-            $shopModel = Config::get('shopify-app.shop_model');
+            $shopModel = config('shopify-app.shop_model');
             $shop = $shopModel::withTrashed()->firstOrCreate(['shopify_domain' => $shopifyDomain]);
 
             // Update shop instance
@@ -63,20 +56,19 @@ class ShopifyApp
     /**
      * Gets an API instance.
      *
-     * @return \OhMyBrew\BasicShopifyAPI
+     * @return object
      */
     public function api()
     {
-        $apiClass = Config::get('shopify-app.api_class');
+        $apiClass = config('shopify-app.api_class');
         $api = new $apiClass();
-        $api->setApiKey(Config::get('shopify-app.api_key'));
-        $api->setApiSecret(Config::get('shopify-app.api_secret'));
+        $api->setApiKey(config('shopify-app.api_key'));
+        $api->setApiSecret(config('shopify-app.api_secret'));
 
-        // Enable basic rate limiting?
-        if (Config::get('shopify-app.api_rate_limiting_enabled') === true) {
+        if (config('shopify-app.api_rate_limiting_enabled') === true) {
             $api->enableRateLimiting(
-                Config::get('shopify-app.api_rate_limit_cycle'),
-                Config::get('shopify-app.api_rate_limit_cycle_buffer')
+                config('shopify-app.api_rate_limit_cycle'),
+                config('shopify-app.api_rate_limit_cycle_buffer')
             );
         }
 
@@ -96,7 +88,7 @@ class ShopifyApp
             return;
         }
 
-        $configEndDomain = Config::get('shopify-app.myshopify_domain');
+        $configEndDomain = config('shopify-app.myshopify_domain');
         $domain = preg_replace('/https?:\/\//i', '', trim($domain));
 
         if (strpos($domain, $configEndDomain) === false && strpos($domain, '.') === false) {
@@ -121,9 +113,8 @@ class ShopifyApp
         $data = $opts['data'];
         $raw = $opts['raw'] ?? false;
         $buildQuery = $opts['buildQuery'] ?? false;
-        $buildQueryWithJoin = $opts['buildQueryWithJoin'] ?? false;
         $encode = $opts['encode'] ?? false;
-        $secret = $opts['secret'] ?? Config::get('shopify-app.api_secret');
+        $secret = $opts['secret'] ?? config('shopify-app.api_secret');
 
         if ($buildQuery) {
             //Query params must be sorted and compiled
@@ -132,7 +123,7 @@ class ShopifyApp
             foreach ($data as $key => $value) {
                 $queryCompiled[] = "{$key}=".(is_array($value) ? implode($value, ',') : $value);
             }
-            $data = implode($queryCompiled, ($buildQueryWithJoin ? '&' : ''));
+            $data = implode($queryCompiled, '');
         }
 
         // Create the hmac all based on the secret

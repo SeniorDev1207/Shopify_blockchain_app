@@ -2,7 +2,6 @@
 
 namespace OhMyBrew\ShopifyApp\Test\Jobs;
 
-use Illuminate\Support\Facades\Config;
 use OhMyBrew\ShopifyApp\Jobs\WebhookInstaller;
 use OhMyBrew\ShopifyApp\Models\Shop;
 use OhMyBrew\ShopifyApp\Test\Stubs\ApiStub;
@@ -16,7 +15,8 @@ class WebhookInstallerJobTest extends TestCase
     {
         parent::setup();
 
-        // Webhooks
+        // Re-used variables
+        $this->shop = Shop::find(1);
         $this->webhooks = [
             [
                 'topic'   => 'orders/create',
@@ -25,13 +25,12 @@ class WebhookInstallerJobTest extends TestCase
         ];
 
         // Stub with our API
-        Config::set('shopify-app.api_class', new ApiStub());
+        config(['shopify-app.api_class' => new ApiStub()]);
     }
 
     public function testJobAcceptsLoad()
     {
-        $shop = factory(Shop::class)->create();
-        $job = new WebhookInstaller($shop, $this->webhooks);
+        $job = new WebhookInstaller($this->shop, $this->webhooks);
 
         $refJob = new ReflectionObject($job);
         $refWebhooks = $refJob->getProperty('webhooks');
@@ -40,13 +39,12 @@ class WebhookInstallerJobTest extends TestCase
         $refShop->setAccessible(true);
 
         $this->assertEquals($this->webhooks, $refWebhooks->getValue($job));
-        $this->assertEquals($shop, $refShop->getValue($job));
+        $this->assertEquals($this->shop, $refShop->getValue($job));
     }
 
     public function testJobShouldTestWebhookExistanceMethod()
     {
-        $shop = factory(Shop::class)->create();
-        $job = new WebhookInstaller($shop, $this->webhooks);
+        $job = new WebhookInstaller($this->shop, $this->webhooks);
 
         $method = new ReflectionMethod($job, 'webhookExists');
         $method->setAccessible(true);
@@ -80,13 +78,7 @@ class WebhookInstallerJobTest extends TestCase
 
     public function testJobShouldNotRecreateWebhooks()
     {
-        // Stub the responses
-        ApiStub::stubResponses([
-            'get_webhooks',
-        ]);
-
-        $shop = factory(Shop::class)->create();
-        $job = new WebhookInstaller($shop, $this->webhooks);
+        $job = new WebhookInstaller($this->shop, $this->webhooks);
         $created = $job->handle();
 
         // Webhook JSON comes from fixture JSON which matches $this->webhooks
@@ -96,12 +88,6 @@ class WebhookInstallerJobTest extends TestCase
 
     public function testJobShouldCreateWebhooks()
     {
-        // Stub the responses
-        ApiStub::stubResponses([
-            'get_webhooks',
-            'get_webhooks',
-        ]);
-
         $webhooks = [
             [
                 'topic'   => 'orders/create',
@@ -109,8 +95,7 @@ class WebhookInstallerJobTest extends TestCase
             ],
         ];
 
-        $shop = factory(Shop::class)->create();
-        $job = new WebhookInstaller($shop, $webhooks);
+        $job = new WebhookInstaller($this->shop, $webhooks);
         $created = $job->handle();
 
         // $webhooks is new webhooks which does not exist in the JSON fixture

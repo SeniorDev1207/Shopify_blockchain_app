@@ -4,9 +4,6 @@ namespace OhMyBrew\ShopifyApp\Facades;
 
 use Illuminate\Support\Facades\Facade;
 
-/**
- * Package's facade mapper for Laravel.
- */
 class ShopifyApp extends Facade
 {
     /**
