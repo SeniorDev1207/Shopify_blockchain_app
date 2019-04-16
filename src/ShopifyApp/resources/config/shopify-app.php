@@ -119,6 +119,7 @@ return [
 
     'api_grant_mode' => env('SHOPIFY_API_GRANT_MODE', 'offline'),
 
+
     /*
     |--------------------------------------------------------------------------
     | Shopify API Redirect

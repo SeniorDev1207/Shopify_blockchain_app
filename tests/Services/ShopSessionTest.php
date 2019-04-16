@@ -2,11 +2,11 @@
 
 namespace OhMyBrew\ShopifyApp\Test\Services;
 
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Session;
 use OhMyBrew\ShopifyApp\Models\Shop;
 use OhMyBrew\ShopifyApp\Services\ShopSession;
 use OhMyBrew\ShopifyApp\Test\TestCase;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Config;
 
 class ShopSessionTest extends TestCase
 {
@@ -23,7 +23,7 @@ class ShopSessionTest extends TestCase
         $fixture = json_decode(file_get_contents(__DIR__.'/../fixtures/access_token_grant.json'));
 
         // Assert defaults
-        $this->assertFalse(Config::get('session.expire_on_close'));
+        $this->assertContains(Config::get('session.expire_on_close'), [null, false]);
         $this->assertNull(Session::get(ShopSession::USER));
         $this->assertNull(Session::get(ShopSession::TOKEN));
 
