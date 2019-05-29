@@ -1,6 +1,17 @@
 <?php
 
 return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Debugging
+    |--------------------------------------------------------------------------
+    |
+    | This option will enable to write within the package
+    |
+    */
+    'debug' => env('SHOPIFY_SDK_DEBUG', false),
+
     /*
     |--------------------------------------------------------------------------
     | Manual migrations
@@ -195,7 +206,7 @@ return [
     |
     */
 
-    'myshopify_domain' => 'myshopify.com',
+    'myshopify_domain' => env('SHOPIFY_MYSHOPIFY_DOMAIN', 'myshopify.com'),
 
     /*
     |--------------------------------------------------------------------------

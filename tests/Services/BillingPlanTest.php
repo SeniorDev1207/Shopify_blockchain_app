@@ -2,6 +2,7 @@
 
 namespace OhMyBrew\ShopifyApp\Test\Services;
 
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\URL;
 use OhMyBrew\ShopifyApp\Models\Charge;
@@ -155,8 +156,9 @@ class BillingPlanTest extends TestCase
             'plan_id' => $plan->id,
         ]);
         $charge = factory(Charge::class)->states('type_recurring')->create([
-            'plan_id' => $plan->id,
-            'shop_id' => $shop->id,
+            'plan_id'    => $plan->id,
+            'shop_id'    => $shop->id,
+            'created_at' => Carbon::now()->subWeek(),
         ]);
 
         // Get the shop's plan charge, this should change to cancelled
@@ -165,7 +167,7 @@ class BillingPlanTest extends TestCase
 
         // Should get a new charge
         $bp = new BillingPlan($shop, $plan);
-        $bp->setChargeId(1234);
+        $bp->setChargeId(12345);
         $bp->activate();
         $charge = $bp->save();
 
@@ -174,5 +176,9 @@ class BillingPlanTest extends TestCase
 
         $this->assertTrue($charge);
         $this->assertEquals('cancelled', $planCharge->status);
+
+        // Get the new charge
+        $newPlanCharge = $shop->planCharge();
+        $this->assertEquals('accepted', $newPlanCharge->status);
     }
 }
