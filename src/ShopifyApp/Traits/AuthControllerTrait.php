@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View;
-use OhMyBrew\ShopifyApp\Events\AppLoggedIn;
 use OhMyBrew\ShopifyApp\Facades\ShopifyApp;
 use OhMyBrew\ShopifyApp\Requests\AuthShop;
 use OhMyBrew\ShopifyApp\Services\AuthShopHandler;
@@ -70,9 +69,6 @@ trait AuthControllerTrait
         // Do post processing and dispatch the jobs
         $auth->postProcess();
         $auth->dispatchJobs($session);
-
-        // Fire event to tell outside that the merchant logged in
-        event(new AppLoggedIn());
 
         // Go to homepage of app or the return_to
         return $this->returnTo();
