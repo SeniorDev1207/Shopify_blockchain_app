@@ -216,7 +216,7 @@ class Charge extends Model
             return $pastDaysInPeriod;
         }
 
-       return 30 - $pastDaysInPeriod;
+        return 30 - $pastDaysInPeriod;
     }
 
 
