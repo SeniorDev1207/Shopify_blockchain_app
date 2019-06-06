@@ -207,7 +207,7 @@ class ShopSession
     /**
      * Checks if the package has everything it needs in session.
      *
-     * @return bool
+     * @return boolean
      */
     public function isValid()
     {
