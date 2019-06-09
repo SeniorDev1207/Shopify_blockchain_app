@@ -225,7 +225,7 @@ class ChargeModelTest extends TestCase
     {
         $shop = factory(Shop::class)->create();
         $plan = factory(Plan::class)->states('type_recurring')->create();
-        $daysOffsetForActivatedOn = 0 * 30;
+        $daysOffsetForActivatedOn = random_int(1, 10) * 30;
         /** @var Charge $charge */
         $charge = factory(Charge::class)->states('type_recurring')->create([
             'activated_on'  => Carbon::today()->subDays(25 + $daysOffsetForActivatedOn),
@@ -267,7 +267,6 @@ class ChargeModelTest extends TestCase
         ]);
         $this->assertEquals(30, $charge->remainingDaysForPeriod());
         $this->assertEquals(0, $charge->pastDaysForPeriod());
-
 
     }
 
