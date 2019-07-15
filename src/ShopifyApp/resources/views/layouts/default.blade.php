@@ -18,15 +18,14 @@
             </div>
         </div>
 
-        @if(config('shopify-app.appbridge_enabled'))
-            <script src="https://unpkg.com/@shopify/app-bridge"></script>
-            <script>
-                var AppBridge = window['app-bridge'];
-                var createApp = AppBridge.default;
-                var app = createApp({
+        @if(config('shopify-app.esdk_enabled'))
+            <script src="https://cdn.shopify.com/s/assets/external/app.js?{{ date('YmdH') }}"></script>
+            <script type="text/javascript">
+                ShopifyApp.init({
                     apiKey: '{{ config('shopify-app.api_key') }}',
-                    shopOrigin: '{{ ShopifyApp::shop()->shopify_domain }}',
-                    forceRedirect: true,
+                    shopOrigin: 'https://{{ ShopifyApp::shop()->shopify_domain }}',
+                    debug: false,
+                    forceRedirect: true
                 });
             </script>
 

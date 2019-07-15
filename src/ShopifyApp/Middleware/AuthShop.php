@@ -5,11 +5,12 @@ namespace OhMyBrew\ShopifyApp\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Session;
 use OhMyBrew\ShopifyApp\Facades\ShopifyApp;
-use OhMyBrew\ShopifyApp\Services\AuthShopHandler;
 use OhMyBrew\ShopifyApp\Services\ShopSession;
+use Symfony\Component\HttpFoundation\Response as BaseResponse;
 
 /**
  * Response for ensuring an authenticated shop.
@@ -31,7 +32,7 @@ class AuthShop
             return $validation;
         }
 
-        return $next($request);
+        return $this->response($request, $next);
     }
 
     /**
@@ -43,73 +44,69 @@ class AuthShop
      */
     protected function validateShop(Request $request)
     {
-        // Setup the session service
-        $session = new ShopSession();
-
-        // Grab the shop's myshopify domain from query or session
         $shopDomain = ShopifyApp::sanitizeShopDomain(
-            $request->filled('shop') ? $request->get('shop') : $session->getDomain()
+            $request->filled('shop') ? $request->get('shop') : (new ShopSession())->getDomain()
         );
-
-        // Get the shop based on domain and update the session service
         $shop = ShopifyApp::shop($shopDomain);
-        $session->setShop($shop);
+        $session = new ShopSession($shop);
 
+        // Check if shop has a session, also check the shops to ensure a match
         if (
+            // Shop?
             $shop === null ||
+
+            // Trashed shop?
             $shop->trashed() ||
+
+            // Session valid?
+            !$session->isValid() ||
+
+            // Store loaded in session doesn't match whats incoming?
             ($shopDomain && $shopDomain !== $shop->shopify_domain) === true
         ) {
-            // We need to handle this issue...
-            return $this->handleBadSession(
-                AuthShopHandler::FLOW_FULL,
-                $session,
-                $request,
-                $shopDomain
-            );
-        } elseif (!$session->isValid()) {
-            // We need to handle this issue...
-            return $this->handleBadSession(
-                $session->isType(ShopSession::GRANT_PERUSER) ? AuthShopHandler::FLOW_FULL : AuthShopHandler::FLOW_PARTIAL,
-                $session,
-                $request,
-                $shopDomain
-            );
-        } else {
-            // Everything is fine!
-            return true;
+            ! config('shopify-app.debug')
+                ?: logger(get_class() . '::validateShop failed for ' . $shopDomain . ' redirect to authenticate');
+
+            // Either no shop session or shops do not match
+            $session->forget();
+
+            // Set the return-to path so we can redirect after successful authentication
+            Session::put('return_to', $request->fullUrl());
+
+            // if auth is successful a new new session will be generated
+            /* @see \OhMyBrew\ShopifyApp\Traits\AuthControllerTrait::authenticate() */
+            return Redirect::route('authenticate', ['shop' => $shopDomain]);
         }
+
+        return true;
     }
 
     /**
-     * Handles a bad shop session.
+     * Come back with a response.
      *
-     * @param string                                    $type       The auth flow to perform.
-     * @param \OhMyBrew\ShopifyApp\Services\ShopSession $session    The session service for the shop.
-     * @param \Illuminate\Http\Request                  $request    The incoming request.
-     * @param string|null                               $shopDomain The incoming shop domain.
+     * @param \Illuminate\Http\Request $request
+     * @param \Closure                 $next
      *
-     * @return \Illuminate\Http\RedirectResponse
+     * @return mixed
      */
-    protected function handleBadSession(
-        string $type,
-        ShopSession $session,
-        Request $request,
-        string $shopDomain = null
-    ) {
-        // Clear all session variables (domain, token, user, etc)
-        $session->forget();
+    protected function response(Request $request, Closure $next)
+    {
+        // Shop is OK, now check if ESDK is enabled and this is not a JSON/AJAX request...
+        $response = $next($request);
+        if (
+            Config::get('shopify-app.esdk_enabled') &&
+            ($request->ajax() || $request->expectsJson() || $request->isJson()) === false
+        ) {
+            if (($response instanceof BaseResponse) === false) {
+                // Not an instance of a Symfony response, override
+                $response = new Response($response);
+            }
 
-        // Set the return-to path so we can redirect after successful authentication
-        Session::put('return_to', $request->fullUrl());
+            // Attempt to modify headers applicable to ESDK (does not work in all cases)
+            $response->headers->set('P3P', 'CP="Not used"');
+            $response->headers->remove('X-Frame-Options');
+        }
 
-        // Depending on the type of grant mode, we need to do a full auth or partial
-        return Redirect::route(
-            'authenticate',
-            [
-                'type' => $type,
-                'shop' => $shopDomain,
-            ]
-        );
+        return $response;
     }
 }

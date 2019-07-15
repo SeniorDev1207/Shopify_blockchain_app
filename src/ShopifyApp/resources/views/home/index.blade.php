@@ -70,17 +70,19 @@
 @section('scripts')
     @parent
 
-    @if(config('shopify-app.appbridge_enabled'))
-        <script type="text/javascript">
-            var AppBridge = window['app-bridge'];
-            var actions = AppBridge.actions;
-            var TitleBar = actions.TitleBar;
-            var Button = actions.Button;
-            var Redirect = actions.Redirect;
-            var titleBarOptions = {
-                title: 'Welcome',
-            };
-            var myTitleBar = TitleBar.create(app, titleBarOptions);
-        </script>
-    @endif
+    <script type="text/javascript">
+        window.mainPageTitle = 'Main Page';
+            ShopifyApp.ready(function(){
+                ShopifyApp.Bar.initialize({
+                    title: 'Welcome',
+                    buttons: {
+                    secondary: {
+                        label: 'Documentation',
+                        href: 'https://github.com/ohmybrew/laravel-shopify',
+                        target: 'new'
+                    }
+                }
+            });
+        });
+    </script>
 @endsection

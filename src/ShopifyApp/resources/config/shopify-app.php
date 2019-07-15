@@ -39,15 +39,15 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | AppBridge Mode
+    | ESDK Mode
     |--------------------------------------------------------------------------
     |
-    | AppBridge (embedded apps) are enabled by default. Set to false to use legacy
+    | ESDK (embedded apps) are enabled by default. Set to false to use legacy
     | mode and host the app inside your own container.
     |
     */
 
-    'appbridge_enabled' => (bool) env('SHOPIFY_APPBRIDGE_ENABLED', true),
+    'esdk_enabled' => (bool) env('SHOPIFY_ESDK_ENABLED', true),
 
     /*
     |--------------------------------------------------------------------------
