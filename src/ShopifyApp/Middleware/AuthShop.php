@@ -64,9 +64,6 @@ class AuthShop
             // Store loaded in session doesn't match whats incoming?
             ($shopDomain && $shopDomain !== $shop->shopify_domain) === true
         ) {
-            ! config('shopify-app.debug')
-                ?: logger(get_class() . '::validateShop failed for ' . $shopDomain . ' redirect to authenticate');
-
             // Either no shop session or shops do not match
             $session->forget();
 
@@ -91,10 +88,10 @@ class AuthShop
      */
     protected function response(Request $request, Closure $next)
     {
-        // Shop is OK, now check if ESDK is enabled and this is not a JSON/AJAX request...
+        // Shop is OK, now check if Appbridge is enabled and this is not a JSON/AJAX request...
         $response = $next($request);
         if (
-            Config::get('shopify-app.esdk_enabled') &&
+            Config::get('shopify-app.appbridge_enabled') &&
             ($request->ajax() || $request->expectsJson() || $request->isJson()) === false
         ) {
             if (($response instanceof BaseResponse) === false) {
@@ -102,7 +99,7 @@ class AuthShop
                 $response = new Response($response);
             }
 
-            // Attempt to modify headers applicable to ESDK (does not work in all cases)
+            // Attempt to modify headers applicable to AppBridge (does not work in all cases)
             $response->headers->set('P3P', 'CP="Not used"');
             $response->headers->remove('X-Frame-Options');
         }

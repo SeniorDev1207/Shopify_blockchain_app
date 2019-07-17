@@ -232,7 +232,7 @@ class ChargeModelTest extends TestCase
             'cancelled_on'  => Carbon::today()->subDay(1),
             'status'        => 'cancelled',
             'shop_id'       => $shop->id,
-            'plan_id'       => $plan->id
+            'plan_id'       => $plan->id,
         ]);
         $this->assertEquals(5, $charge->remainingDaysForPeriod());
         $this->assertEquals(25, $charge->pastDaysForPeriod());
@@ -242,7 +242,7 @@ class ChargeModelTest extends TestCase
             'cancelled_on'  => Carbon::today()->subDay(1),
             'status'        => 'cancelled',
             'shop_id'       => $shop->id,
-            'plan_id'       => $plan->id
+            'plan_id'       => $plan->id,
         ]);
         $this->assertEquals(25, $charge->remainingDaysForPeriod());
         $this->assertEquals(5, $charge->pastDaysForPeriod());
@@ -252,7 +252,7 @@ class ChargeModelTest extends TestCase
             'cancelled_on'  => Carbon::today()->subDay(1), // cancel one day before a new period begins
             'status'        => 'cancelled',
             'shop_id'       => $shop->id,
-            'plan_id'       => $plan->id
+            'plan_id'       => $plan->id,
         ]);
         $this->assertEquals(0, $charge->remainingDaysForPeriod());
         $this->assertEquals(0, $charge->pastDaysForPeriod()); // canceled and a new period will NOT start
@@ -263,22 +263,10 @@ class ChargeModelTest extends TestCase
             'cancelled_on'  => Carbon::today(), // cancel on the same date as a new period starts
             'status'        => 'cancelled',
             'shop_id'       => $shop->id,
-            'plan_id'       => $plan->id
+            'plan_id'       => $plan->id,
         ]);
         $this->assertEquals(30, $charge->remainingDaysForPeriod());
         $this->assertEquals(0, $charge->pastDaysForPeriod());
-
-        /** @var Charge $charge */
-        $charge = factory(Charge::class)->states('type_recurring')->create([
-            'activated_on'  => Carbon::today()->subDays(200),
-            'cancelled_on'  => Carbon::today()->subDays(100), // cancel on the same date as a new period starts
-            'status'        => 'cancelled',
-            'shop_id'       => $shop->id,
-            'plan_id'       => $plan->id
-        ]);
-        $this->assertEquals(0, $charge->remainingDaysForPeriod());
-        $this->assertEquals(null, $charge->pastDaysForPeriod());
-
     }
 
     public function testRetreieve()
