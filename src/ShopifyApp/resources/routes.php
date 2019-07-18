@@ -9,7 +9,7 @@
 |
 */
 
-Route::group(['prefix' => config('shopify-app.prefix'), 'middleware' => ['web']], function () {
+Route::group(['middleware' => ['web']], function () {
     /*
     |--------------------------------------------------------------------------
     | Home Route
@@ -46,13 +46,13 @@ Route::group(['prefix' => config('shopify-app.prefix'), 'middleware' => ['web']]
     | Authenticate Method
     |--------------------------------------------------------------------------
     |
-    | Authenticates a shop.
+    | Authenticates a shop fully or partially.
     |
     */
 
     Route::match(
         ['get', 'post'],
-        '/authenticate',
+        '/authenticate/{type?}',
         'OhMyBrew\ShopifyApp\Controllers\AuthController@authenticate'
     )
     ->name('authenticate');
