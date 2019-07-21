@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class AddChargesTableExpiresOn extends Migration
 {
@@ -26,7 +26,7 @@ class AddChargesTableExpiresOn extends Migration
     public function down()
     {
         Schema::table('charges', function (Blueprint $table) {
-            $table->dropColumn(['expires_on']);
+            //
         });
     }
 }
