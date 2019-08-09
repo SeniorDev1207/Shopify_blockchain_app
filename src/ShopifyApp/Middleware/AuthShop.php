@@ -48,7 +48,7 @@ class AuthShop
         $session = new ShopSession();
 
         // Grab the shop's myshopify domain from query or session
-        $shopDomainParam = $request->get('shop') ?? $request->header('shop');
+        $shopDomainParam = $request->get('shop');
         $shopDomainSession = $session->getDomain();
         $shopDomain = ShopifyApp::sanitizeShopDomain($shopDomainParam ?? $shopDomainSession);
 
