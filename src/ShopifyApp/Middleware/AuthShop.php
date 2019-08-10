@@ -3,6 +3,7 @@
 namespace OhMyBrew\ShopifyApp\Middleware;
 
 use Closure;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Config;
@@ -36,9 +37,80 @@ class AuthShop
     }
 
     /**
+     * Get the referer shopify domain from the request and validate.
+     *
+     * @param \Illuminate\Http\Request $request
+     *
+     * @return bool|string
+     */
+    protected function getRefererDomain(Request $request)
+    {
+        // Extract the referer
+        $referer = $request->header('referer');
+
+        if (!$referer) {
+            return false;
+        }
+
+        // Get the values of the referer query params as an array
+        $url = parse_url($referer, PHP_URL_QUERY);
+        parse_str($url, $refererQueryParams);
+
+        if (!$refererQueryParams) {
+            return false;
+        }
+
+        if (!isset($refererQueryParams['shop']) || !isset($refererQueryParams['hmac'])) {
+            return false;
+        }
+
+        // Make sure there is no param spoofing attempt
+        if (ShopifyApp::api()->verifyRequest($refererQueryParams)) {
+            return $refererQueryParams['shop'];
+        }
+
+        return false;
+    }
+
+    /**
+     * Grab the shop's myshopify domain from query, referer or session.
+     *
+     * @param \Illuminate\Http\Request                  $request
+     * @param \OhMyBrew\ShopifyApp\Services\ShopSession $session
+     *
+     * @return bool|string
+     */
+    protected function getShopDomain(Request $request, ShopSession $session)
+    {
+        // Query variable is highest priority
+        $shopDomainParam = $request->get('shop');
+        if ($shopDomainParam) {
+            return ShopifyApp::sanitizeShopDomain($shopDomainParam);
+        }
+
+        // Then the value in the referer header (if validated)
+        // See issue https://github.com/ohmybrew/laravel-shopify/issues/295
+        $shopRefererParam = $this->getRefererDomain($request);
+        if ($shopRefererParam) {
+            return ShopifyApp::sanitizeShopDomain($shopRefererParam);
+        }
+
+        // If neither are available then pull from the session
+        $shopDomainSession = $session->getDomain();
+        if ($shopDomainSession) {
+            return ShopifyApp::sanitizeShopDomain($shopDomainSession);
+        }
+
+        // No domain :(
+        throw new Exception('Unable to get shop domain.');
+    }
+
+    /**
      * Checks we have a valid shop.
      *
      * @param \Illuminate\Http\Request $request
+     *
+     * @throws Exception
      *
      * @return bool|\Illuminate\Http\RedirectResponse
      */
@@ -47,10 +119,7 @@ class AuthShop
         // Setup the session service
         $session = new ShopSession();
 
-        // Grab the shop's myshopify domain from query or session
-        $shopDomainParam = $request->get('shop');
-        $shopDomainSession = $session->getDomain();
-        $shopDomain = ShopifyApp::sanitizeShopDomain($shopDomainParam ?? $shopDomainSession);
+        $shopDomain = $this->getShopDomain($request, $session);
 
         // Get the shop based on domain and update the session service
         $shopModel = Config::get('shopify-app.shop_model');
@@ -60,9 +129,18 @@ class AuthShop
 
         $session->setShop($shop);
 
-        $flowType = $this->getFlowType($shop, $session);
+        $flowType = null;
+        if ($shop === null || $shop->trashed()) {
+            // We need to do a full flow
+            $flowType = AuthShopHandler::FLOW_FULL;
+        } elseif (!$session->isValid()) {
+            // Just a session issue, do a partial flow if we can...
+            $flowType = $session->isType(ShopSession::GRANT_PERUSER) ?
+                AuthShopHandler::FLOW_FULL :
+                AuthShopHandler::FLOW_PARTIAL;
+        }
 
-        if ($flowType) {
+        if ($flowType !== null) {
             // We have a bad session
             return $this->handleBadSession(
                 $flowType,
@@ -74,36 +152,6 @@ class AuthShop
 
         // Everything is fine!
         return true;
-    }
-
-    /**
-     * Gets the appropriate flow type. It either returns full, partial,
-     * or false. If it returns false it means that everything is fine.
-     *
-     * @param                                           $shop    The shop model.
-     * @param \OhMyBrew\ShopifyApp\Services\ShopSession $session The session service for the shop.
-     *
-     * @return bool|string
-     */
-    private function getFlowType($shop, $session)
-    {
-        // We need to do a full flow if no shop or it is deleted
-        if ($shop === null || $shop->trashed()) {
-            return AuthShopHandler::FLOW_FULL;
-        }
-
-        // Do nothing if the session is valid
-        if ($session->isValid()) {
-            return false;
-        }
-
-        // We need to do a full flow if it grant per user
-        if ($session->isType(ShopSession::GRANT_PERUSER)) {
-            return AuthShopHandler::FLOW_FULL;
-        }
-
-        // Default is the partial flow
-        return AuthShopHandler::FLOW_PARTIAL;
     }
 
     /**
