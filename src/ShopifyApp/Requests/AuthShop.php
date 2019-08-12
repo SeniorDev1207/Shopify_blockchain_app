@@ -62,7 +62,6 @@ class AuthShop extends FormRequest
             'hmac'      => 'nullable|string',
             'timestamp' => 'nullable|numeric',
             'protocol'  => 'nullable|string',
-            'locale'    => 'nullable|string',
         ];
     }
 
