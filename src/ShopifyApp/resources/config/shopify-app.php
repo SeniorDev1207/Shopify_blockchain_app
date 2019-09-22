@@ -71,6 +71,10 @@ return [
 
     'appbridge_enabled' => (bool) env('SHOPIFY_APPBRIDGE_ENABLED', true),
 
+    // Use semver range to link to a major or minor version number.
+    // Leaving empty will use the latest verison - not recommended in production.
+    'appbridge_version' => (bool) env('SHOPIFY_APPBRIDGE_VERSION', '1'),
+
     /*
     |--------------------------------------------------------------------------
     | Shopify App Name
@@ -206,19 +210,6 @@ return [
     */
 
     'api_rate_limit_cycle_buffer' => env('SHOPIFY_API_RATE_LIMIT_CYCLE_BUFFER', null),
-    
-    /*
-    |--------------------------------------------------------------------------
-    | Shopify Jobs Namespace
-    |--------------------------------------------------------------------------
-    |
-    | This option option allows you to change out the default job namespace
-    | which is \App\Jobs. This option is mainly used if any custom configuration 
-    | is done in autoload and does not need to be changed unless required.
-    |
-    */
-
-    'job_namespace' => env('SHOPIFY_JOB_NAMESPACE', '\OhMyBrew\ShopifyApp\Jobs\\'),
 
     /*
     |--------------------------------------------------------------------------
