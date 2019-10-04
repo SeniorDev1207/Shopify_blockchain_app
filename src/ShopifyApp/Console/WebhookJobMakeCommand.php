@@ -62,26 +62,10 @@ class WebhookJobMakeCommand extends JobMakeCommand
     'webhooks' => [
         [
             'topic' => '{$this->argument('topic')}',
-            'address' => 'https://your-domain.com/webhook/{$this->getUrlFromName(trim($this->argument('name')))}'
+            'address' => 'https://your-domain.com/webhook/{$this->getUrlFromName($this->getNameInput())}'
         ]
     ]
         ");
-    }
-
-    /**
-     * Append "Job" to the end of class name.
-     *
-     * @return string
-     */
-    protected function getNameInput()
-    {
-        $name = parent::getNameInput();
-        $suffix = 'Job';
-        if (!Str::endsWith($name, $suffix)) {
-            $name .= $suffix;
-        }
-
-        return $name;
     }
 
     /**
