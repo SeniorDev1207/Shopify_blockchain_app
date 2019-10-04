@@ -42,7 +42,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | This option option allows you to change out the default job namespace
-    | which is \App\Jobs. This option is mainly used if any custom configuration 
+    | which is \App\Jobs. This option is mainly used if any custom configuration
     | is done in autoload and does not need to be changed unless required.
     |
     */
@@ -85,7 +85,7 @@ return [
 
     // Use semver range to link to a major or minor version number.
     // Leaving empty will use the latest verison - not recommended in production.
-    'appbridge_version' => (bool) env('SHOPIFY_APPBRIDGE_VERSION', '1'),
+    'appbridge_version' => env('SHOPIFY_APPBRIDGE_VERSION', '1'),
 
     /*
     |--------------------------------------------------------------------------
