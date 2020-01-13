@@ -3,10 +3,9 @@
 namespace OhMyBrew\ShopifyApp\Models;
 
 use Exception;
-use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Model;
-use OhMyBrew\ShopifyApp\Services\IApiHelper;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * Responsible for reprecenting a charge record.
@@ -84,13 +83,11 @@ class Charge extends Model
     /**
      * Gets the charge's data from Shopify.
      *
-     * @param IApiHelper $apiHelper The API helper.
-     *
      * @return object
      */
-    public function retrieve(IApiHelper $apiHelper): object
+    public function retrieve()
     {
-        $path = '';
+        $path = null;
         switch ($this->type) {
             case self::CHARGE_CREDIT:
                 $path = 'application_credits';
@@ -103,7 +100,10 @@ class Charge extends Model
                 break;
         }
 
-        return $apiHelper->getCharge($path, $this->chargeId);
+        return $this
+            ->shop
+            ->api()
+            ->rest('GET', "/admin/{$path}/{$this->charge_id}.json")->body->{substr($path, 0, -1)};
     }
 
     /**

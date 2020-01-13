@@ -2,16 +2,15 @@
 
 namespace OhMyBrew\ShopifyApp\Services;
 
-use stdClass;
-use Illuminate\Support\Facades\URL;
-use OhMyBrew\ShopifyApp\Models\Shop;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\URL;
 use OhMyBrew\ShopifyApp\Events\AppLoggedIn;
 use OhMyBrew\ShopifyApp\Facades\ShopifyApp;
-use OhMyBrew\ShopifyApp\Interfaces\IShopModel;
-use OhMyBrew\ShopifyApp\Jobs\WebhookInstaller;
 use OhMyBrew\ShopifyApp\Jobs\ScripttagInstaller;
+use OhMyBrew\ShopifyApp\Jobs\WebhookInstaller;
+use OhMyBrew\ShopifyApp\Models\Shop;
+use stdClass;
 
 /**
  * Responsible for handling how to authenticate a shop.
@@ -33,13 +32,13 @@ class AuthShopHandler
     protected $api;
 
     /**
-     * Sets the shop.
+     * Constructor for auth shop handler.
      *
-     * @param IShopModel $shop The shop.
+     * @param \OhMyBrew\ShopifyApp\Models\Shop $shop The shop.
      *
      * @return self
      */
-    public function setShop(IShopModel $shop)
+    public function __construct(shop $shop)
     {
         // Setup the API
         $this->shop = $shop;
@@ -96,7 +95,6 @@ class AuthShopHandler
      *
      * @return void
      */
-    /* MARK: REPLACED WITH RESTORESHOPACTION */
     public function postProcess()
     {
         if (!$this->shop->trashed()) {
@@ -139,7 +137,6 @@ class AuthShopHandler
      *
      * @return void
      */
-    /* MARK: REPLACED WITH INSTALLWEBHOOKSACTION */
     public function dispatchWebhooks()
     {
         $webhooks = Config::get('shopify-app.webhooks');
@@ -154,7 +151,6 @@ class AuthShopHandler
      *
      * @return void
      */
-    /* MARK: REPLACED WITH INSTALLSCRIPTSACTION */
     public function dispatchScripttags()
     {
         $scripttags = Config::get('shopify-app.scripttags');
@@ -169,7 +165,6 @@ class AuthShopHandler
      *
      * @return void
      */
-    /* MARK: REPLACED WITH RUNAFTERAUTHACTION */
     public function dispatchAfterAuthenticate()
     {
         // Grab the jobs config

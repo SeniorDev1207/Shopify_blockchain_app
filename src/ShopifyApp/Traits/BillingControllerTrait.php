@@ -2,16 +2,16 @@
 
 namespace OhMyBrew\ShopifyApp\Traits;
 
-use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Redirect;
-use OhMyBrew\ShopifyApp\Actions\GetPlanUrl;
+use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Facades\View;
 use OhMyBrew\ShopifyApp\Facades\ShopifyApp;
-use OhMyBrew\ShopifyApp\Services\UsageCharge;
-use Illuminate\Contracts\View\View as ViewView;
-use Illuminate\Http\RedirectResponse;
+use OhMyBrew\ShopifyApp\Models\Charge;
+use OhMyBrew\ShopifyApp\Models\Plan;
+use OhMyBrew\ShopifyApp\Models\Shop;
 use OhMyBrew\ShopifyApp\Requests\StoreUsageCharge;
-use OhMyBrew\ShopifyApp\Actions\ActivatePlan;
+use OhMyBrew\ShopifyApp\Services\BillingPlan;
+use OhMyBrew\ShopifyApp\Services\UsageCharge;
 
 /**
  * Responsible for billing a shop for plans and usage charges.
@@ -21,46 +21,44 @@ trait BillingControllerTrait
     /**
      * Redirects to billing screen for Shopify.
      *
-     * @param int        $planId     The plan's ID.
-     * @param GetPlanUrl $getPlanUrl The action for getting the plan URL.
+     * @param \OhMyBrew\ShopifyApp\Models\Plan $plan The plan.
      *
-     * @return ViewView
+     * @return \Illuminate\View\View
      */
-    public function index(int $planId, GetPlanUrl $getPlanUrl): ViewView
+    public function index(Plan $plan)
     {
+        // If the plan is null, get a plan
+        if (is_null($plan) || ($plan && !$plan->exists)) {
+            $plan = Plan::where('on_install', true)->first();
+        }
+
+        // Get the confirmation URL
+        $bp = new BillingPlan(ShopifyApp::shop(), $plan);
+        $url = $bp->confirmationUrl();
+
         // Do a fullpage redirect
-        return View::make(
-            'shopify-app::billing.fullpage_redirect',
-            [
-                'url' => $getPlanUrl($planId),
-            ]
-        );
+        return View::make('shopify-app::billing.fullpage_redirect', compact('url'));
     }
 
     /**
      * Processes the response from the customer.
      *
-     * @param Request      $request      The HTTP request object.
-     * @param int          $planId       The plan's ID.
-     * @param ActivatePlan $activatePlan The action for activating the plan for a shop.
+     * @param \OhMyBrew\ShopifyApp\Models\Plan $plan The plan.
      *
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function process(
-        Request $request,
-        int $planId,
-        ActivatePlan $activatePlanForShop
-    ): RedirectResponse {
+    public function process(Plan $plan)
+    {
         // Activate the plan and save
-        $result = $activatePlanForShop(
-            ShopifyApp::shop(),
-            $planId,
-            $request->query('charge_id')
-        );
+        $shop = ShopifyApp::shop();
+        $bp = new BillingPlan($shop, $plan);
+        $bp->setChargeId(Request::query('charge_id'));
+        $bp->activate();
+        $save = $bp->save();
 
         // Go to homepage of app
         return Redirect::route('home')->with(
-            $result ? 'success' : 'failure',
+            $save ? 'success' : 'failure',
             'billing'
         );
     }

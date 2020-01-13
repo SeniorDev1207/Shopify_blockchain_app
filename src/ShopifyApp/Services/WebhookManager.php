@@ -2,10 +2,8 @@
 
 namespace OhMyBrew\ShopifyApp\Services;
 
-use OhMyBrew\ShopifyApp\Models\Shop;
 use Illuminate\Support\Facades\Config;
-use OhMyBrew\ShopifyApp\Services\IApiHelper;
-use OhMyBrew\ShopifyApp\Interfaces\IShopModel;
+use OhMyBrew\ShopifyApp\Models\Shop;
 
 /**
  * Responsible for managing webhooks.
@@ -13,18 +11,18 @@ use OhMyBrew\ShopifyApp\Interfaces\IShopModel;
 class WebhookManager
 {
     /**
-     * The API helper.
+     * The shop.
      *
-     * @var IApiHelper
-     */
-    protected $apiHelper;
-
-    /**
-     * The shop object.
-     *
-     * @var IShopModel
+     * @var \OhMyBrew\ShopifyApp\Models\Shop
      */
     protected $shop;
+
+    /**
+     * The shop API.
+     *
+     * @var \OhMyBrew\BasicShopifyAPI
+     */
+    protected $api;
 
     /**
      * Cached shop webhooks result.
@@ -36,14 +34,14 @@ class WebhookManager
     /**
      * Create a new job instance.
      *
-     * @param IShopModel $shop The shop object
+     * @param object $shop The shop object
      *
-     * @return self
+     * @return void
      */
-    public function __construct(IApiHelper $apiHelper, IShopModel $shop)
+    public function __construct($shop)
     {
-        $this->apiHelper = $apiHelper;
         $this->shop = $shop;
+        $this->api = $this->shop->api();
     }
 
     /**
@@ -51,10 +49,17 @@ class WebhookManager
      *
      * @return array
      */
-    public function shopWebhooks(): array
+    public function shopWebhooks()
     {
         if (!$this->shopWebhooks) {
-            $this->shopWebhooks = $this->apiHelper->setInstance($this->shop->api())->getWebhooks();
+            $this->shopWebhooks = $this->api->rest(
+                'GET',
+                '/admin/webhooks.json',
+                [
+                    'limit'  => 250,
+                    'fields' => 'id,address',
+                ]
+            )->body->webhooks;
         }
 
         return $this->shopWebhooks;
@@ -77,7 +82,7 @@ class WebhookManager
      *
      * @return bool
      */
-    public function webhookExists(array $webhook): bool
+    public function webhookExists(array $webhook)
     {
         $shopWebhooks = $this->shopWebhooks();
         foreach ($shopWebhooks as $shopWebhook) {
@@ -95,12 +100,9 @@ class WebhookManager
      *
      * @return array
      */
-    public function createWebhooks(): array
+    public function createWebhooks()
     {
         $configWebhooks = $this->configWebhooks();
-
-        // Setup the API instance
-        $api = $this->apiHelper->setInstance($this->shop->api());
 
         // Create if it does not exist
         $created = [];
@@ -108,7 +110,7 @@ class WebhookManager
             // Check if the required webhook exists on the shop
             if (!$this->webhookExists($webhook)) {
                 // It does not... create the webhook
-                $api->createWebhook($webhook);
+                $this->api->rest('POST', '/admin/webhooks.json', ['webhook' => $webhook]);
                 $created[] = $webhook;
             }
         }
@@ -121,17 +123,14 @@ class WebhookManager
      *
      * @return array
      */
-    public function deleteWebhooks(): array
+    public function deleteWebhooks()
     {
         $shopWebhooks = $this->shopWebhooks();
-
-        // Setup the API instance
-        $api = $this->apiHelper->setInstance($this->shop->api());
 
         $deleted = [];
         foreach ($shopWebhooks as $webhook) {
             // Its a webhook in the config, delete it
-            $api->deleteWebhook($webhook->id);
+            $this->api->rest('DELETE', "/admin/webhooks/{$webhook->id}.json");
             $deleted[] = $webhook;
         }
 
@@ -146,7 +145,7 @@ class WebhookManager
      *
      * @return void
      */
-    public function recreateWebhooks(): void
+    public function recreateWebhooks()
     {
         $this->deleteWebhooks();
         $this->createWebhooks();

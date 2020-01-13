@@ -2,11 +2,7 @@
 
 namespace OhMyBrew\ShopifyApp\Models;
 
-use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Database\Eloquent\Model;
-use OhMyBrew\ShopifyApp\DTO\PlanDetailsDTO;
-use OhMyBrew\ShopifyApp\Interfaces\IShopModel;
 
 /**
  * Responsible for reprecenting a plan record.
@@ -103,58 +99,5 @@ class Plan extends Model
     public function isTest()
     {
         return (bool) $this->test;
-    }
-
-    /**
-     * Returns the charge params sent with the post request.
-     *
-     * @param IShopModel $shop The shop the plan is for.
-     *
-     * @return PlanDetailsDTO
-     */
-    public function chargeDetails(IShopModel $shop): PlanDetailsDTO
-    {
-        // Handle capped amounts for UsageCharge API
-        $isCapped = isset($this->capped_amount) && $this->capped_amount > 0;
-
-        // Build the details object
-        return new PlanDetailsDTO(
-            $this->name,
-            $this->price,
-            $this->isTest(),
-            $this->determineTrialDaysForShop($shop),
-            $isCapped ? $this->capped_amount : null,
-            $isCapped ? $this->terms : null,
-            URL::secure(
-                Config::get('shopify-app.billing_redirect'),
-                ['plan_id' => $this->id]
-            )
-        );
-    }
-
-    /**
-     * Determines the trial days for the plan.
-     * Detects if reinstall is happening and properly adjusts.
-     * 
-     * @param IShopModel $shop The shop the plan is for.
-     *
-     * @return int
-     */
-    public function determineTrialDaysForShop(IShopModel $shop): int
-    {
-        if (!$this->hasTrial()) {
-            // Not a trial-type plan, return none
-            return 0;
-        }
-
-        // See if the shop has been charged for this plan before..
-        // If they have, its a good chance its a reinstall
-        $pc = $shop->planCharge($this->plan->id);
-        if ($pc !== null) {
-            return $pc->remainingTrialDaysFromCancel();
-        }
-
-        // Seems like a fresh trial... return the days set in database
-        return $this->trial_days;
     }
 }
