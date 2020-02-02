@@ -14,7 +14,7 @@ class ShopifyApp extends Facade
      *
      * @return string
      */
-    protected static function getFacadeAccessor(): string
+    protected static function getFacadeAccessor()
     {
         return 'shopifyapp';
     }
