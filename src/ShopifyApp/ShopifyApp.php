@@ -5,7 +5,10 @@ namespace OhMyBrew\ShopifyApp;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
-use OhMyBrew\ShopifyApp\Models\Shop;
+use OhMyBrew\BasicShopifyAPI;
+use OhMyBrew\ShopifyApp\Contracts\Objects\Values\ShopDomain;
+use OhMyBrew\ShopifyApp\Contracts\Queries\Shop as IShopQuery;
+use OhMyBrew\ShopifyApp\Contracts\ShopModel as IShopModel;
 use OhMyBrew\ShopifyApp\Services\ShopSession;
 
 /**
@@ -16,43 +19,59 @@ class ShopifyApp
     /**
      * Laravel application.
      *
-     * @var \Illuminate\Foundation\Application
+     * @var Application
      */
     public $app;
 
     /**
      * The current shop.
      *
-     * @var \OhMyBrew\ShopifyApp\Models\Shop
+     * @var IShopModel
      */
     public $shop;
 
     /**
+     * The querier for shops.
+     *
+     * @var IShopQuery
+     */
+    public $shopQuery;
+
+    /**
      * Create a new confide instance.
      *
-     * @param \Illuminate\Foundation\Application $app
+     * @param Application $app
      *
-     * @return void
+     * @return self
      */
-    public function __construct(Application $app)
+    public function __construct(Application $app, IShopQuery $shopQuery)
     {
         $this->app = $app;
+        $this->shopQuery = $shopQuery;
     }
 
     /**
      * Gets/sets the current shop.
      *
-     * @param string|null $shopDomain
+     * @param ShopDomain|null $shopDomain The shop's domain.
      *
-     * @return \OhMyBrew\ShopifyApp\Models\Shop
+     * @return IShopModel
      */
-    public function shop(string $shopDomain = null)
+    public function shop(ShopDomain $shopDomain = null): IShopModel
     {
-        $shopifyDomain = $shopDomain ? $this->sanitizeShopDomain($shopDomain) : (new ShopSession())->getDomain();
+        $shopifyDomain = $shopDomain ??
+            ($this->app->make(ShopSession::class))->getDomain();
+
         if (!$this->shop && $shopifyDomain) {
             // Grab shop from database here
-            $shopModel = Config::get('shopify-app.shop_model');
-            $shop = $shopModel::withTrashed()->firstOrCreate(['shopify_domain' => $shopifyDomain]);
+            $shop = $this->shopQuery->getByDomain($shopifyDomain, [], true);
+            if (!$shop) {
+                // Create the shop
+                $model = Config::get('auth.providers.users.model');
+                $shop = new $model();
+                $shop->shopify_domain = $shopifyDomain;
+                $shop->save();
+            }
 
             // Update shop instance
             $this->shop = $shop;
@@ -64,9 +83,9 @@ class ShopifyApp
     /**
      * Gets an API instance.
      *
-     * @return \OhMyBrew\BasicShopifyAPI
+     * @return BasicShopifyAPI
      */
-    public function api()
+    public function api(): BasicShopifyAPI
     {
         $apiClass = Config::get('shopify-app.api_class');
         $api = new $apiClass();
@@ -95,12 +114,12 @@ class ShopifyApp
      *
      * @param string $domain The shopify domain
      *
-     * @return string
+     * @return string|null
      */
-    public function sanitizeShopDomain($domain)
+    public function sanitizeShopDomain($domain): ?string
     {
         if (empty($domain)) {
-            return;
+            return null;
         }
 
         $configEndDomain = Config::get('shopify-app.myshopify_domain');
@@ -112,17 +131,17 @@ class ShopifyApp
         }
 
         // Return the host after cleaned up
-        return parse_url("https://{$domain}", PHP_URL_HOST);
+        return parse_url("http://{$domain}", PHP_URL_HOST);
     }
 
     /**
      * HMAC creation helper.
      *
-     * @param array $opts
+     * @param array $opts The options for building the HMAC
      *
      * @return string
      */
-    public function createHmac(array $opts)
+    public function createHmac(array $opts): string
     {
         // Setup defaults
         $data = $opts['data'];
@@ -137,9 +156,12 @@ class ShopifyApp
             ksort($data);
             $queryCompiled = [];
             foreach ($data as $key => $value) {
-                $queryCompiled[] = "{$key}=".(is_array($value) ? implode($value, ',') : $value);
+                $queryCompiled[] = "{$key}=".(is_array($value) ? implode(',', $value) : $value);
             }
-            $data = implode($queryCompiled, ($buildQueryWithJoin ? '&' : ''));
+            $data = implode(
+                ($buildQueryWithJoin ? '&' : ''),
+                $queryCompiled
+            );
         }
 
         // Create the hmac all based on the secret
@@ -156,7 +178,7 @@ class ShopifyApp
      *
      * @return bool
      */
-    public function debug(string $message)
+    public function debug(string $message): bool
     {
         if (!Config::get('shopify-app.debug')) {
             return false;

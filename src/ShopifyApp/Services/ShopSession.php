@@ -4,82 +4,60 @@ namespace OhMyBrew\ShopifyApp\Services;
 
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Session;
-use Jenssegers\Agent\Agent;
-use OhMyBrew\ShopifyApp\Models\Shop;
-use stdClass;
+use OhMyBrew\ShopifyApp\Traits\ShopAccessible;
+use OhMyBrew\ShopifyApp\Objects\Enums\AuthMode;
+use OhMyBrew\ShopifyApp\Objects\Values\ShopDomain;
+use OhMyBrew\ShopifyApp\Objects\Values\NullableShopDomain;
+use OhMyBrew\ShopifyApp\Contracts\Commands\Shop as IShopCommand;
+use OhMyBrew\ShopifyApp\Objects\Values\AccessToken;
+use OhMyBrew\ShopifyApp\Objects\Values\NullableAccessToken;
+use OhMyBrew\ShopifyApp\Objects\Values\ShopId;
 
 /**
  * Responsible for handling session retreival and storage.
  */
 class ShopSession
 {
+    use ShopAccessible;
+
     /**
      * The session key for Shopify domain.
      *
      * @var string
      */
-    const DOMAIN = 'shopify_domain';
+    public const DOMAIN = 'shopify_domain';
 
     /**
      * The session key for Shopify associated user.
      *
      * @var string
      */
-    const USER = 'shopify_user';
+    public const USER = 'shopify_user';
 
     /**
      * The (session/database) key for Shopify access token.
      *
      * @var string
      */
-    const TOKEN = 'shopify_token';
+    public const TOKEN = 'shopify_token';
 
     /**
-     * The offline grant key.
+     * The commands for shop.
      *
-     * @var string
+     * @var IShopCommand
      */
-    const GRANT_OFFLINE = 'offline';
-
-    /**
-     * The per-user grant key.
-     *
-     * @var string
-     */
-    const GRANT_PERUSER = 'per-user';
-
-    /**
-     * The shop.
-     *
-     * @var \OhMyBrew\ShopifyApp\Models\Shop|null
-     */
-    protected $shop;
+    protected $shopCommand;
 
     /**
      * Constructor for shop session class.
      *
-     * @param object|null $shop The shop.
+     * @param IShopCommand $shopCommand The commands for shop.
      *
      * @return self
      */
-    public function __construct($shop = null)
+    public function __construct(IShopCommand $shopCommand)
     {
-        $this->setShop($shop);
-        $this->setCookiePolicy();
-    }
-
-    /**
-     * Sets the shop.
-     *
-     * @param object|null $shop The shop.
-     *
-     * @return self
-     */
-    public function setShop($shop = null)
-    {
-        $this->shop = $shop;
-
-        return $this;
+        $this->shopCommand = $shopCommand;
     }
 
     /**
@@ -87,14 +65,14 @@ class ShopSession
      *
      * @return string
      */
-    public function getType()
+    public function getType(): string
     {
         $config = Config::get('shopify-app.api_grant_mode');
-        if ($config === self::GRANT_PERUSER) {
-            return self::GRANT_PERUSER;
+        if ($config === AuthMode::PERUSER()->toNative()) {
+            return AuthMode::PERUSER()->toNative();
         }
 
-        return self::GRANT_OFFLINE;
+        return AuthMode::OFFLINE()->toNative();
     }
 
     /**
@@ -102,9 +80,9 @@ class ShopSession
      *
      * @param string $type The type of access to check.
      *
-     * @return string
+     * @return bool
      */
-    public function isType(string $type)
+    public function isType(string $type): bool
     {
         return $this->getType() === $type;
     }
@@ -113,11 +91,11 @@ class ShopSession
      * Sets the Shopify domain to session.
      * `expire_on_close` must be set to avoid issue of cookies being deleted too early.
      *
-     * @param string $shopDomain The Shopify domain.
+     * @param ShopDomain $shopDomain The Shopify domain.
      *
      * @return self
      */
-    public function setDomain(string $shopDomain)
+    public function setDomain(ShopDomain $shopDomain): self
     {
         $this->fixLifetime();
         Session::put(self::DOMAIN, $shopDomain);
@@ -128,22 +106,24 @@ class ShopSession
     /**
      * Gets the Shopify domain in session.
      *
-     * @return void
+     * @return NullableShopDomain
      */
-    public function getDomain()
+    public function getDomain(): NullableShopDomain
     {
-        return Session::get(self::DOMAIN);
+        return new NullableShopDomain(
+            Session::get(self::DOMAIN)
+        );
     }
 
     /**
      * Stores the access token and user (if any).
      * Uses database for acess token if it was an offline authentication.
      *
-     * @param stdClass $access
+     * @param object $access
      *
      * @return self
      */
-    public function setAccess(stdClass $access)
+    public function setAccess(object $access): self
     {
         // Grab the token
         $token = $access->access_token;
@@ -156,13 +136,10 @@ class ShopSession
             $this->fixLifetime();
             Session::put(self::USER, $this->user);
             Session::put(self::TOKEN, $token);
-
-            return $this;
+        } else {
+            // Offline
+            $this->shopCommand->setAccessToken(new ShopId($this->shop->id), new AccessToken($token));
         }
-
-        // Offline
-        $this->shop->{self::TOKEN} = $token;
-        $this->shop->save();
 
         return $this;
     }
@@ -172,14 +149,17 @@ class ShopSession
      *
      * @param bool $strict Return the token matching the grant type (default: use either).
      *
-     * @return string
+     * @return AccessToken
      */
-    public function getToken(bool $strict = false)
+    public function getToken(bool $strict = false): AccessToken
     {
         // Tokens
+        $peruser = AuthMode::PERUSER()->toNative();
+        $offline = AuthMode::OFFLINE()->toNative();
+
         $tokens = [
-            self::GRANT_PERUSER => Session::get(self::TOKEN),
-            self::GRANT_OFFLINE => $this->shop->{self::TOKEN},
+            $peruser => new AccessToken(Session::get(self::TOKEN)),
+            $offline => new AccessToken($this->shop->{self::TOKEN}),
         ];
 
         if ($strict) {
@@ -188,15 +168,15 @@ class ShopSession
         }
 
         // We need a token either way...
-        return $tokens[self::GRANT_PERUSER] ?? $tokens[self::GRANT_OFFLINE];
+        return $tokens[$peruser]->isNull() ? $tokens[$offline] : $tokens[$peruser];
     }
 
     /**
      * Gets the associated user (if any).
      *
-     * @return stfClass|null
+     * @return object|null
      */
-    public function getUser()
+    public function getUser(): ?object
     {
         return Session::get(self::USER);
     }
@@ -206,7 +186,7 @@ class ShopSession
      *
      * @return bool
      */
-    public function hasUser()
+    public function hasUser(): bool
     {
         return $this->getUser() !== null;
     }
@@ -216,7 +196,7 @@ class ShopSession
      *
      * @return self
      */
-    public function forget()
+    public function forget(): self
     {
         $keys = [self::DOMAIN, self::USER, self::TOKEN];
         foreach ($keys as $key) {
@@ -231,12 +211,12 @@ class ShopSession
      *
      * @return bool
      */
-    public function isValid()
+    public function isValid(): bool
     {
         // No token set or domain in session?
-        $result = !empty($this->getToken(true))
-            && $this->getDomain() !== null
-            && $this->getDomain() == $this->shop->shopify_domain;
+        $result = !empty($this->getToken(true)->toNative())
+            && !$this->getDomain()->isNull()
+            && $this->getDomain()->toNative() == $this->shop->shopify_domain;
 
         return $result;
     }
@@ -246,113 +226,8 @@ class ShopSession
      *
      * @return void
      */
-    protected function fixLifetime()
+    protected function fixLifetime(): void
     {
         Config::set('session.expire_on_close', true);
-    }
-
-    /**
-     * Sets the cookie policy.
-     *
-     * From Chrome 80+ there is a new requirement that the SameSite
-     * cookie flag be set to `none` and the cookies be marked with
-     * `secure`.
-     *
-     * Reference: https://www.chromium.org/updates/same-site/incompatible-clients
-     *
-     * Enables SameSite none and Secure cookies on:
-     *
-     * - Chrome v67+
-     * - Safari on OSX 10.14+
-     * - iOS 13+
-     * - UCBrowser 12.13+
-     *
-     * @return null
-     */
-    public function setCookiePolicy()
-    {
-        if ($this->checkSameSiteNoneCompatible()) {
-            config([
-                'session.secure'    => true,
-                'session.same_site' => 'none',
-            ]);
-        }
-    }
-
-    /**
-     * Checks to see if the current browser session should be
-     * using the SameSite=none cookie policy.
-     *
-     * @return bool
-     */
-    private function checkSameSiteNoneCompatible()
-    {
-        $compatible = false;
-
-        $this->agent = new Agent();
-
-        try {
-            $browser = $this->getBrowserDetails();
-            $platform = $this->getPlatformDetails();
-
-            if ($this->agent->is('Chrome') && $browser['major'] >= 67) {
-                $compatible = true;
-            }
-
-            if ($this->agent->is('iOS') && $platform['major'] > 12) {
-                $compatible = true;
-            }
-
-            if ($this->agent->is('OS X') &&
-                ($this->agent->is('Safari') && !$this->agent->is('iOS')) &&
-                $platform['float'] > 10.14
-            ) {
-                $compatible = true;
-            }
-
-            if ($this->agent->is('UCBrowser') &&
-                $browser['float'] > 12.13
-            ) {
-                $compatible = true;
-            }
-
-            return $compatible;
-        } catch (\Exception $e) {
-            return false;
-        }
-    }
-
-    /**
-     * Returns details about the current web browser.
-     *
-     * @return array
-     */
-    private function getBrowserDetails()
-    {
-        $version = $this->agent->version($this->agent->browser());
-        $pieces = explode('.', str_replace('_', '.', $version));
-
-        return [
-            'major' => $pieces[0],
-            'minor' => $pieces[1],
-            'float' => (float) sprintf('%s.%s', $pieces[0], $pieces[1]),
-        ];
-    }
-
-    /**
-     * Returns details about the current operating system.
-     *
-     * @return array
-     */
-    private function getPlatformDetails()
-    {
-        $version = $this->agent->version($this->agent->platform());
-        $pieces = explode('.', str_replace('_', '.', $version));
-
-        return [
-            'major' => $pieces[0],
-            'minor' => $pieces[1],
-            'float' => (float) sprintf('%s.%s', $pieces[0], $pieces[1]),
-        ];
     }
 }

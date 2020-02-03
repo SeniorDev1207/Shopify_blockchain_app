@@ -10,10 +10,8 @@ use Illuminate\Queue\SerializesModels;
 
 class AfterAuthenticateJob implements ShouldQueue
 {
-    use Dispatchable;
-    use InteractsWithQueue;
-    use Queueable;
-    use SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
     public $shop;
 
     public function __construct($shop)
