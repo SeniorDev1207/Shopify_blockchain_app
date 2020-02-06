@@ -2,151 +2,98 @@
 
 namespace OhMyBrew\ShopifyApp;
 
-use Illuminate\Foundation\Application;
-use Illuminate\Support\Facades\Config;
+use OhMyBrew\BasicShopifyAPI;
 use Illuminate\Support\Facades\Log;
-use OhMyBrew\ShopifyApp\Models\Shop;
 use OhMyBrew\ShopifyApp\Services\ShopSession;
+use OhMyBrew\ShopifyApp\Traits\ConfigAccessible;
+use OhMyBrew\ShopifyApp\Objects\Values\NullAccessToken;
+use OhMyBrew\ShopifyApp\Contracts\ShopModel as IShopModel;
+use OhMyBrew\ShopifyApp\Contracts\Queries\Shop as IShopQuery;
+use OhMyBrew\ShopifyApp\Contracts\Commands\Shop as IShopCommand;
+use OhMyBrew\ShopifyApp\Contracts\Objects\Values\ShopDomain as ShopDomainValue;
+use OhMyBrew\ShopifyApp\Objects\Values\ShopDomain;
 
 /**
  * The base "helper" class for this package.
  */
 class ShopifyApp
 {
-    /**
-     * Laravel application.
-     *
-     * @var \Illuminate\Foundation\Application
-     */
-    public $app;
+    use ConfigAccessible;
 
     /**
      * The current shop.
      *
-     * @var \OhMyBrew\ShopifyApp\Models\Shop
+     * @var IShopModel
      */
-    public $shop;
+    protected $shop;
+
+    /**
+     * The commands for shops.
+     *
+     * @var IShopCommand
+     */
+    protected $shopCommnad;
+
+    /**
+     * The querier for shops.
+     *
+     * @var IShopQuery
+     */
+    protected $shopQuery;
+
+    /**
+     * The shop session helper.
+     *
+     * @var ShopSession
+     */
+    protected $shopSession;
 
     /**
      * Create a new confide instance.
      *
-     * @param \Illuminate\Foundation\Application $app
+     * @param IShopCommand $shopCommand The commands for shops.
+     * @param IShopQuery   $shopQuery   The queier for shops.
+     * @param ShopSession  $shopSession The shop session helper.
      *
-     * @return void
+     * @return self
      */
-    public function __construct(Application $app)
-    {
-        $this->app = $app;
+    public function __construct(
+        IShopCommand $shopCommand,
+        IShopQuery $shopQuery,
+        ShopSession $shopSession
+    ) {
+        $this->shopCommand = $shopCommand;
+        $this->shopQuery = $shopQuery;
+        $this->shopSession = $shopSession;
     }
 
     /**
-     * Gets/sets the current shop.
+     * Gets the current shop based on the session
      *
-     * @param string|null $shopDomain
+     * @param ShopDomain $domain The shop domain to manually find.
      *
-     * @return \OhMyBrew\ShopifyApp\Models\Shop
+     * @return IShopModel|null
      */
-    public function shop(string $shopDomain = null)
+    public function shop(ShopDomain $domain = null): ?IShopModel
     {
-        $shopifyDomain = $shopDomain ? $this->sanitizeShopDomain($shopDomain) : (new ShopSession())->getDomain();
-        if (!$this->shop && $shopifyDomain) {
-            // Grab shop from database here
-            $shopModel = Config::get('shopify-app.shop_model');
-            $shop = $shopModel::withTrashed()->firstOrCreate(['shopify_domain' => $shopifyDomain]);
-
+        // Get the shop domain from params or from shop session
+        if ($this->shop === null) {
             // Update shop instance
-            $this->shop = $shop;
+            $shopDomain = $domain === null ? $this->shopSession->getShop()->getDomain() : $domain;
+            $this->shop = $this->getOrCreateShop($domain);
         }
 
         return $this->shop;
     }
 
     /**
-     * Gets an API instance.
+     * Gets the current API instance for the current shop.
      *
-     * @return \OhMyBrew\BasicShopifyAPI
+     * @return BasicShopifyAPI
      */
-    public function api()
+    public function api(): BasicShopifyAPI
     {
-        $apiClass = Config::get('shopify-app.api_class');
-        $api = new $apiClass();
-        $api->setApiKey(Config::get('shopify-app.api_key'));
-        $api->setApiSecret(Config::get('shopify-app.api_secret'));
-
-        // Add versioning?
-        $version = Config::get('shopify-app.api_version');
-        if ($version !== null) {
-            $api->setVersion($version);
-        }
-
-        // Enable basic rate limiting?
-        if (Config::get('shopify-app.api_rate_limiting_enabled') === true) {
-            $api->enableRateLimiting(
-                Config::get('shopify-app.api_rate_limit_cycle'),
-                Config::get('shopify-app.api_rate_limit_cycle_buffer')
-            );
-        }
-
-        return $api;
-    }
-
-    /**
-     * Ensures shop domain meets the specs.
-     *
-     * @param string $domain The shopify domain
-     *
-     * @return string
-     */
-    public function sanitizeShopDomain($domain)
-    {
-        if (empty($domain)) {
-            return;
-        }
-
-        $configEndDomain = Config::get('shopify-app.myshopify_domain');
-        $domain = strtolower(preg_replace('/https?:\/\//i', '', trim($domain)));
-
-        if (strpos($domain, $configEndDomain) === false && strpos($domain, '.') === false) {
-            // No myshopify.com ($configEndDomain) in shop's name
-            $domain .= ".{$configEndDomain}";
-        }
-
-        // Return the host after cleaned up
-        return parse_url("https://{$domain}", PHP_URL_HOST);
-    }
-
-    /**
-     * HMAC creation helper.
-     *
-     * @param array $opts
-     *
-     * @return string
-     */
-    public function createHmac(array $opts)
-    {
-        // Setup defaults
-        $data = $opts['data'];
-        $raw = $opts['raw'] ?? false;
-        $buildQuery = $opts['buildQuery'] ?? false;
-        $buildQueryWithJoin = $opts['buildQueryWithJoin'] ?? false;
-        $encode = $opts['encode'] ?? false;
-        $secret = $opts['secret'] ?? Config::get('shopify-app.api_secret');
-
-        if ($buildQuery) {
-            //Query params must be sorted and compiled
-            ksort($data);
-            $queryCompiled = [];
-            foreach ($data as $key => $value) {
-                $queryCompiled[] = "{$key}=".(is_array($value) ? implode($value, ',') : $value);
-            }
-            $data = implode($queryCompiled, ($buildQueryWithJoin ? '&' : ''));
-        }
-
-        // Create the hmac all based on the secret
-        $hmac = hash_hmac('sha256', $data, $secret, $raw);
-
-        // Return based on options
-        return $encode ? base64_encode($hmac) : $hmac;
+        return $this->shopSession->api();
     }
 
     /**
@@ -156,14 +103,37 @@ class ShopifyApp
      *
      * @return bool
      */
-    public function debug(string $message)
+    public function debug(string $message): bool
     {
-        if (!Config::get('shopify-app.debug')) {
+        if (!$this->getConfig('debug')) {
             return false;
         }
 
         Log::debug($message);
 
         return true;
+    }
+
+    /**
+     * Gets or creates the shop.
+     * If a shop is trashed, it will still be found.
+     * If a shop does not exist, it will be created.
+     *
+     * @param ShopDomainValue $domain The shop domain.
+     *
+     * @return IShopModel
+     */
+    protected function getOrCreateShop(ShopDomainValue $domain): IShopModel
+    {
+        // Grab shop from database here (domain, no withs, with trashed)
+        $shop = $this->shopQuery->getByDomain($domain, [], true);
+
+        if ($shop === null) {
+            // Create the shop
+            $id = $this->shopCommnad->create($domain, new NullAccessToken());
+            $shop = $this->shopQuery->getById($id);
+        }
+
+        return $shop;
     }
 }
