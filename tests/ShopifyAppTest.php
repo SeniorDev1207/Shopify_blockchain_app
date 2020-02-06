@@ -2,44 +2,29 @@
 
 namespace OhMyBrew\ShopifyApp\Test;
 
-use OhMyBrew\BasicShopifyAPI;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Session;
+use OhMyBrew\ShopifyApp\Models\Shop;
 use OhMyBrew\ShopifyApp\ShopifyApp;
-use OhMyBrew\ShopifyApp\Test\TestCase;
-use OhMyBrew\ShopifyApp\Services\ShopSession;
-use OhMyBrew\ShopifyApp\Objects\Values\ShopDomain;
-use OhMyBrew\ShopifyApp\Contracts\Queries\Shop as IShopQuery;
-use OhMyBrew\ShopifyApp\Contracts\Commands\Shop as IShopCommand;
 
 class ShopifyAppTest extends TestCase
 {
-    protected $shopifyApp;
-    protected $shopQuery;
-
     public function setUp(): void
     {
         parent::setUp();
 
-        // Shop querier instance
-        $this->shopQuery = $this->app->make(IShopQuery::class);
-
-        // ShopApp instance
-        $this->shopifyApp = new ShopifyApp(
-            $this->app->make(IShopCommand::class),
-            $this->shopQuery,
-            $this->app->make(ShopSession::class)
-        );
+        $this->shopifyApp = new ShopifyApp($this->app);
     }
 
-    public function testShopWithoutSession(): void
+    public function testShopWithoutSession()
     {
         // No session, no API instance, thus no shop
         $this->assertNull($this->shopifyApp->shop());
     }
 
-    public function testShopWithSession(): void
+    public function testShopWithSession()
     {
-        // Set the session
-        $this->app['session']->put('shopify_domain', 'example.myshopify.com');
+        Session::put('shopify_domain', 'example.myshopify.com');
 
         // First run should store the shop object to shop var
         $run1 = $this->shopifyApp->shop();
@@ -50,41 +35,86 @@ class ShopifyAppTest extends TestCase
         $this->assertEquals($run1, $run2);
     }
 
-    public function testCreatesNewShopWithSessionIfItDoesNotExist(): void
+    public function testCreatesNewShopWithSessionIfItDoesNotExist()
     {
-        // Setup the domain to test
-        $domain = new ShopDomain('example-nonexistant.myshopify.com');
+        Session::put('shopify_domain', 'example-nonexistant.myshopify.com');
 
-        // Set the session
-        $this->app['session']->put('shopify_domain', $domain->toNative());
+        $this->assertNull(Shop::where('shopify_domain', 'example-nonexistant.myshopify.com')->first());
 
-        // Shop should not exist
-        $this->assertNull($this->shopQuery->getByDomain($domain));
-
-        // Calling shop() should trigger a create of the non-existant shop
         $this->shopifyApp->shop();
 
-        // Shop should now exist
-        $this->assertNotNull($this->shopQuery->getByDomain($domain));
+        $this->assertNotNull(Shop::where('shopify_domain', 'example-nonexistant.myshopify.com')->first());
     }
 
-    public function testReturnsApiInstance(): void
+    public function testReturnsApiInstance()
     {
-        $this->assertEquals(BasicShopifyAPI::class, get_class($this->shopifyApp->api()));
+        $this->assertEquals(\OhMyBrew\BasicShopifyAPI::class, get_class($this->shopifyApp->api()));
     }
 
-    public function testReturnsApiInstanceWithRateLimiting(): void
+    public function testReturnsApiInstanceWithRateLimiting()
     {
-        $this->app['config']->set('shopify-app.api_rate_limiting_enabled', true);
+        Config::set('shopify-app.api_rate_limiting_enabled', true);
 
         $this->assertTrue($this->shopifyApp->api()->isRateLimitingEnabled());
+    }
+
+    public function testReturnsApiInstanceWithVersioning()
+    {
+        Config::set('shopify-app.api_version', 'unstable');
+
+        $this->assertEquals('unstable', $this->shopifyApp->api()->getVersion());
+    }
+
+    public function testShopSanitize()
+    {
+        $domains = ['my-shop', 'my-shop.myshopify.com', 'MY-shOp.myshopify.com', 'https://my-shop.myshopify.com/abc/xyz', 'https://my-shop.myshopify.com', 'http://my-shop.myshopify.com'];
+        $domains_2 = ['my-shop', 'my-shop.myshopify.io', 'https://my-shop.myshopify.io', 'http://my-shop.myshopify.io'];
+        $domains_3 = ['', false, null];
+
+        // Test for standard myshopify.com
+        foreach ($domains as $domain) {
+            $this->assertEquals('my-shop.myshopify.com', $this->shopifyApp->sanitizeShopDomain($domain));
+        }
+
+        // Test if someone changed the domain
+        Config::set('shopify-app.myshopify_domain', 'myshopify.io');
+        foreach ($domains_2 as $domain) {
+            $this->assertEquals('my-shop.myshopify.io', $this->shopifyApp->sanitizeShopDomain($domain));
+        }
+
+        // Test for empty shops
+        foreach ($domains_3 as $domain) {
+            $this->assertNull($this->shopifyApp->sanitizeShopDomain($domain));
+        }
+    }
+
+    public function testShouldUseDefaultModel()
+    {
+        $shop = factory(Shop::class)->create();
+        Session::put('shopify_domain', $shop->shopify_domain);
+
+        $shop = $this->shopifyApp->shop();
+
+        $this->assertEquals(\OhMyBrew\ShopifyApp\Models\Shop::class, get_class($shop));
+    }
+
+    public function testShouldAllowForModelOverride()
+    {
+        $shop = factory(Shop::class)->create();
+        Session::put('shopify_domain', $shop->shopify_domain);
+        Config::set('shopify-app.shop_model', \OhMyBrew\ShopifyApp\Test\Stubs\ShopModelStub::class);
+
+        $shop = $this->shopifyApp->shop();
+
+        $this->assertEquals(\OhMyBrew\ShopifyApp\Test\Stubs\ShopModelStub::class, get_class($shop));
+        $this->assertEquals('hello', $shop->hello());
     }
 
     public function testHmacCreator()
     {
         // Set the secret to use for HMAC creations
         $secret = 'hello';
-        $this->app['config']->set('shopify-app.api_secret', $secret);
+        Config::set('shopify-app.api_secret', $secret);
 
         // Raw data
         $data = 'one-two-three';
@@ -113,7 +143,7 @@ class ShopifyAppTest extends TestCase
         $this->shopifyApp->debug('test');
         $this->assertFalse($this->shopifyApp->debug('test'));
 
-        $this->app['config']->set('shopify-app.debug', true);
+        Config::set('shopify-app.debug', true);
         $this->assertTrue($this->shopifyApp->debug('test'));
     }
 }

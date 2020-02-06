@@ -27,7 +27,7 @@ class WebhookJobMakeCommand extends JobMakeCommand
      *
      * @return string
      */
-    protected function getStub(): string
+    protected function getStub()
     {
         return __DIR__.'/stubs/webhook-job.stub';
     }
@@ -37,7 +37,7 @@ class WebhookJobMakeCommand extends JobMakeCommand
      *
      * @return array
      */
-    protected function getArguments(): array
+    protected function getArguments()
     {
         return [
             ['name', InputArgument::REQUIRED, 'The name of the class'],
@@ -50,7 +50,7 @@ class WebhookJobMakeCommand extends JobMakeCommand
      *
      * @return void
      */
-    public function handle(): void
+    public function handle()
     {
         // Fire parent... handle for >=5.5, fire for <5.5
         $method = method_exists($this, 'handle') ? 'handle' : 'fire';
@@ -73,7 +73,7 @@ class WebhookJobMakeCommand extends JobMakeCommand
      *
      * @return string
      */
-    protected function getNameInput(): string
+    protected function getNameInput()
     {
         $name = parent::getNameInput();
         $suffix = 'Job';
@@ -91,7 +91,7 @@ class WebhookJobMakeCommand extends JobMakeCommand
      *
      * @return string
      */
-    protected function getUrlFromName(string $name): string
+    protected function getUrlFromName(string $name)
     {
         if (Str::endsWith($name, 'Job')) {
             $name = substr($name, 0, -3);

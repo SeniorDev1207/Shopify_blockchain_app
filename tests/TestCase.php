@@ -4,8 +4,8 @@ namespace OhMyBrew\ShopifyApp\Test;
 
 use Closure;
 use Illuminate\Support\Facades\App;
+use OhMyBrew\ShopifyApp\Models\Shop;
 use OhMyBrew\ShopifyApp\ShopifyAppProvider;
-use OhMyBrew\ShopifyApp\Test\Stubs\User as UserStub;
 use Orchestra\Database\ConsoleServiceProvider;
 use Orchestra\Testbench\TestCase as OrchestraTestCase;
 
@@ -20,7 +20,7 @@ abstract class TestCase extends OrchestraTestCase
         $this->withFactories(__DIR__.'/../src/ShopifyApp/resources/database/factories');
     }
 
-    protected function getPackageProviders($app): array
+    protected function getPackageProviders($app)
     {
         // ConsoleServiceProvider required to make migrations work
         return [
@@ -29,7 +29,7 @@ abstract class TestCase extends OrchestraTestCase
         ];
     }
 
-    protected function getPackageAliases($app): array
+    protected function getPackageAliases($app)
     {
         // For the facade
         return [
@@ -37,13 +37,13 @@ abstract class TestCase extends OrchestraTestCase
         ];
     }
 
-    protected function resolveApplicationHttpKernel($app): void
+    protected function resolveApplicationHttpKernel($app)
     {
         // For adding custom the shop middleware
-        $app->singleton(\Illuminate\Contracts\Http\Kernel::class, \OhMyBrew\ShopifyApp\Test\Stubs\Kernel::class);
+        $app->singleton('Illuminate\Contracts\Http\Kernel', 'OhMyBrew\ShopifyApp\Test\Stubs\Kernel');
     }
 
-    protected function getEnvironmentSetUp($app): void
+    protected function getEnvironmentSetUp($app)
     {
         // Use memory SQLite, cleans it self up
         $app['config']->set('database.default', 'sqlite');
@@ -52,16 +52,12 @@ abstract class TestCase extends OrchestraTestCase
             'database' => ':memory:',
             'prefix'   => '',
         ]);
-        $app['config']->set('auth.providers.users.model', UserStub::class);
     }
 
     protected function setupDatabase($app)
     {
-        // Run Laravel migrations
-        $this->loadLaravelMigrations();
-
-        // Run package migration
-        $this->artisan('migrate')->run();
+        // Path to our migrations to load
+        $this->loadMigrationsFrom(realpath(__DIR__.'/../src/ShopifyApp/resources/database/migrations'));
     }
 
     protected function swapEnvironment(string $env, Closure $fn)
