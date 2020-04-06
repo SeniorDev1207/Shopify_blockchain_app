@@ -40,7 +40,8 @@ class AppUninstalledTest extends TestCase
         // Run the job
         AppUninstalledJob::dispatchNow(
             $shop->getDomain(),
-            json_decode(file_get_contents(__DIR__.'/../../fixtures/app_uninstalled.json'))
+            json_decode(file_get_contents(__DIR__.'/../../fixtures/app_uninstalled.json')),
+            $this->app->make(CancelCurrentPlan::class)
         );
 
         // Refresh both models to see the changes
