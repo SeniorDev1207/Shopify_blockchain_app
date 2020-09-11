@@ -9,11 +9,6 @@ use Osiset\ShopifyApp\Test\Stubs\Api as ApiStub;
 
 class AuthenticateShopTest extends TestCase
 {
-    /**
-     * @var \Osiset\ShopifyApp\Actions\AuthenticateShop
-     */
-    protected $action;
-
     public function setUp(): void
     {
         parent::setUp();

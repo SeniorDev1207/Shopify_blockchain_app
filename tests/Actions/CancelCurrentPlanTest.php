@@ -9,11 +9,6 @@ use Osiset\ShopifyApp\Actions\CancelCurrentPlan;
 
 class CancelCurrentPlanTest extends TestCase
 {
-    /**
-     * @var \Osiset\ShopifyApp\Actions\CancelCurrentPlan
-     */
-    protected $action;
-
     public function setUp(): void
     {
         parent::setUp();

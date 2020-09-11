@@ -10,11 +10,6 @@ require_once __DIR__.'/../Stubs/AfterAuthorizeJob.php';
 
 class AfterAuthorizeTest extends TestCase
 {
-    /**
-     * @var \Osiset\ShopifyApp\Actions\AfterAuthorize
-     */
-    protected $action;
-
     public function setUp(): void
     {
         parent::setUp();

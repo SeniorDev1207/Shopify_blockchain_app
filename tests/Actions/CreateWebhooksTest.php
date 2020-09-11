@@ -8,11 +8,6 @@ use Osiset\ShopifyApp\Test\Stubs\Api as ApiStub;
 
 class CreateWebhooksTest extends TestCase
 {
-    /**
-     * @var \Osiset\ShopifyApp\Actions\CreateWebhooks
-     */
-    protected $action;
-
     public function setUp(): void
     {
         parent::setUp();

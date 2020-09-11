@@ -13,11 +13,6 @@ use Osiset\ShopifyApp\Objects\Values\ChargeId;
 
 class ActivateUsageChargeTest extends TestCase
 {
-    /**
-     * @var \Osiset\ShopifyApp\Actions\ActivateUsageCharge
-     */
-    protected $action;
-
     public function setUp(): void
     {
         parent::setUp();

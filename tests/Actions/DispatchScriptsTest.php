@@ -10,11 +10,6 @@ use Osiset\ShopifyApp\Messaging\Jobs\ScripttagInstaller;
 
 class DispatchScriptsTest extends TestCase
 {
-    /**
-     * @var \Osiset\ShopifyApp\Actions\DispatchScripts
-     */
-    protected $action;
-
     public function setUp(): void
     {
         parent::setUp();

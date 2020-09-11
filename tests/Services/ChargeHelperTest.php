@@ -15,9 +15,6 @@ use stdClass;
 
 class ChargeHelperTest extends TestCase
 {
-    /**
-     * @var \Osiset\ShopifyApp\Services\ChargeHelper
-     */
     protected $chargeHelper;
 
     public function setUp(): void
