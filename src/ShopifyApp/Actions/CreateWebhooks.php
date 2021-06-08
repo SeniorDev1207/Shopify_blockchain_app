@@ -2,6 +2,7 @@
 
 namespace Osiset\ShopifyApp\Actions;
 
+use Osiset\BasicShopifyAPI\ResponseAccess;
 use Osiset\ShopifyApp\Contracts\Objects\Values\ShopId as ShopIdValue;
 use Osiset\ShopifyApp\Contracts\Queries\Shop as IShopQuery;
 
@@ -44,13 +45,13 @@ class CreateWebhooks
          * Checks if a webhooks exists already in the shop.
          *
          * @param array $webhook  The webhook config.
-         * @param array $webhooks The current webhooks to search.
+         * @param ResponseAccess $webhooks The current webhooks to search.
          *
          * @return bool
          */
-        $exists = static function (array $webhook, array $webhooks): bool {
+        $exists = function (array $webhook, ResponseAccess $webhooks): bool {
             foreach ($webhooks as $shopWebhook) {
-                if ($shopWebhook['node']['endpoint']['callbackUrl'] === $webhook['address']) {
+                if ($shopWebhook['address'] === $webhook['address']) {
                     // Found the webhook in our list
                     return true;
                 }
@@ -71,7 +72,7 @@ class CreateWebhooks
         $used = [];
         foreach ($configWebhooks as $webhook) {
             // Check if the required webhook exists on the shop
-            if (! $exists($webhook, $webhooks['container']['edges'])) {
+            if (! $exists($webhook, $webhooks)) {
                 // It does not... create the webhook
                 $apiHelper->createWebhook($webhook);
                 $created[] = $webhook;
@@ -81,10 +82,10 @@ class CreateWebhooks
         }
 
         // Delete unused webhooks
-        foreach ($webhooks['container']['edges'] as $webhook) {
-            if (! in_array($webhook['node']['endpoint']['callbackUrl'], $used)) {
+        foreach ($webhooks as $webhook) {
+            if (! in_array($webhook->address, $used)) {
                 // Webhook should be deleted
-                $apiHelper->deleteWebhook($webhook['node']['id']);
+                $apiHelper->deleteWebhook($webhook->id);
                 $deleted[] = $webhook;
             }
         }

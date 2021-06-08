@@ -25,7 +25,7 @@ class CreateWebhooksTest extends TestCase
         // Create the config
         $webhooks = [
             [
-                'topic'   => 'ORDERS_CREATE',
+                'topic'   => 'orders/create',
                 'address' => 'https://localhost/webhooks/orders-create',
             ],
         ];
@@ -35,7 +35,7 @@ class CreateWebhooksTest extends TestCase
         $this->setApiStub();
         ApiStub::stubResponses([
             'get_webhooks',
-            'delete_webhook',
+            'post_webhook',
         ]);
 
         // Create the shop
@@ -50,7 +50,7 @@ class CreateWebhooksTest extends TestCase
 
         $this->assertCount(0, $result['created']);
         $this->assertCount(1, $result['deleted']);
-        $this->assertSame($result['deleted'][0]['node']['endpoint']['callbackUrl'], 'http://apple.com/uninstall');
+        $this->assertSame($result['deleted'][0]['address'], 'http://apple.com/uninstall');
     }
 
     public function testShouldCreate(): void
@@ -58,15 +58,15 @@ class CreateWebhooksTest extends TestCase
         // Create the config
         $webhooks = [
             [
-                'topic'   => 'ORDERS_CREATE',
+                'topic'   => 'orders/create',
                 'address' => 'https://localhost/webhooks/orders-create',
             ],
             [
-                'topic'   => 'ORDERS_CREATE',
+                'topic'   => 'orders/create',
                 'address' => 'https://localhost/webhooks/orders-create-different',
             ],
             [
-                'topic'   => 'APP_UNINSTALLED',
+                'topic'   => 'app/uninstalled',
                 'address' => 'http://apple.com/uninstall',
             ],
         ];

@@ -47,9 +47,9 @@ class DeleteWebhooks
         $webhooks = $apiHelper->getWebhooks();
 
         $deleted = [];
-        foreach ($webhooks['container']['edges'] as $webhook) {
+        foreach ($webhooks as $webhook) {
             // Its a webhook in the config, delete it
-            $apiHelper->deleteWebhook($webhook['node']['id']);
+            $apiHelper->deleteWebhook($webhook['id']);
 
             // Keep track of what was deleted
             $deleted[] = $webhook;
