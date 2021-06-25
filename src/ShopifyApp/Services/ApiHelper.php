@@ -14,7 +14,6 @@ use Osiset\BasicShopifyAPI\ResponseAccess;
 use Osiset\BasicShopifyAPI\Session;
 use Osiset\ShopifyApp\Contracts\ApiHelper as IApiHelper;
 use Osiset\ShopifyApp\Exceptions\ApiException;
-use function Osiset\ShopifyApp\getShopifyConfig;
 use Osiset\ShopifyApp\Objects\Enums\ApiMethod;
 use Osiset\ShopifyApp\Objects\Enums\AuthMode;
 use Osiset\ShopifyApp\Objects\Enums\ChargeType;
@@ -23,6 +22,7 @@ use Osiset\ShopifyApp\Objects\Transfers\PlanDetails as PlanDetailsTransfer;
 use Osiset\ShopifyApp\Objects\Transfers\UsageChargeDetails as UsageChargeDetailsTransfer;
 use Osiset\ShopifyApp\Objects\Values\ChargeReference;
 use Osiset\ShopifyApp\Objects\Values\NullableShopDomain;
+use Osiset\ShopifyApp\Util;
 
 /**
  * Basic helper class for API calls to Shopify.
@@ -45,24 +45,24 @@ class ApiHelper implements IApiHelper
         $opts = new Options();
 
         $shop = $this->getShopDomain($session)->toNative();
-        $opts->setApiKey(getShopifyConfig('api_key', $shop));
-        $opts->setApiSecret(getShopifyConfig('api_secret', $shop));
-        $opts->setVersion(getShopifyConfig('api_version', $shop));
+        $opts->setApiKey(Util::getShopifyConfig('api_key', $shop));
+        $opts->setApiSecret(Util::getShopifyConfig('api_secret', $shop));
+        $opts->setVersion(Util::getShopifyConfig('api_version', $shop));
 
         // Create the instance
-        if (getShopifyConfig('api_init')) {
+        if (Util::getShopifyConfig('api_init')) {
             // User-defined init function
             $this->api = call_user_func(
-                getShopifyConfig('api_init'),
+                Util::getShopifyConfig('api_init'),
                 $opts,
                 $session,
                 Request::all()
             );
         } else {
             // Default init
-            $ts = getShopifyConfig('api_time_store', $shop);
-            $ls = getShopifyConfig('api_limit_store', $shop);
-            $sd = getShopifyConfig('api_deferrer', $shop);
+            $ts = Util::getShopifyConfig('api_time_store', $shop);
+            $ls = Util::getShopifyConfig('api_limit_store', $shop);
+            $sd = Util::getShopifyConfig('api_deferrer', $shop);
 
             $this->api = new BasicShopifyAPI(
                 $opts,
@@ -131,7 +131,7 @@ class ApiHelper implements IApiHelper
 
         return $this->api->getAuthUrl(
             $scopes,
-            URL::secure(getShopifyConfig('api_redirect')),
+            URL::secure(Util::getShopifyConfig('api_redirect')),
             strtolower($mode)
         );
     }
@@ -326,99 +326,58 @@ class ApiHelper implements IApiHelper
 
     /**
      * {@inheritdoc}
-     * @throws Exception
+     * TODO: Convert to GraphQL.
      */
     public function getWebhooks(array $params = []): ResponseAccess
     {
-        $query = '
-        query webhookSubscriptions($first: Int!) {
-            webhookSubscriptions(first: $first) {
-                edges {
-                    node {
-                        id
-                        topic
-                        endpoint {
-                            ...on WebhookHttpEndpoint {
-                                callbackUrl
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        ';
+        // Setup the params
+        $reqParams = array_merge(
+            [
+                'limit'  => 250,
+                'fields' => 'id,address',
+            ],
+            $params
+        );
 
-        $variables = [
-            'first' => 250,
-        ];
+        // Fire the request
+        $response = $this->doRequest(
+            ApiMethod::GET(),
+            '/admin/webhooks.json',
+            $reqParams
+        );
 
-        $response = $this->doRequestGraphQL($query, $variables);
-
-        return $response['body'];
+        return $response['body']['webhooks'];
     }
 
     /**
      * {@inheritdoc}
-     * @throws Exception
+     * TODO: Convert to GraphQL.
      */
     public function createWebhook(array $payload): ResponseAccess
     {
-        $query = '
-        mutation webhookSubscriptionCreate(
-            $topic: WebhookSubscriptionTopic!,
-            $webhookSubscription: WebhookSubscriptionInput!
-        ) {
-            webhookSubscriptionCreate(
-                topic: $topic
-                webhookSubscription: $webhookSubscription
-            ) {
-                userErrors {
-                    field
-                    message
-                }
-                webhookSubscription {
-                    id
-                }
-            }
-        }
-        ';
+        // Fire the request
+        $response = $this->doRequest(
+            ApiMethod::POST(),
+            '/admin/webhooks.json',
+            ['webhook' => $payload]
+        );
 
-        $variables = [
-            'topic' => $payload['topic'],
-            'webhookSubscription' => [
-                'callbackUrl' => $payload['address'],
-                'format' => 'JSON',
-            ],
-        ];
-
-        $response = $this->doRequestGraphQL($query, $variables);
-
-        return $response['body'];
+        return $response['body']['webhook'];
     }
 
     /**
      * {@inheritdoc}
-     * @throws Exception
+     * TODO: Convert to GraphQL.
      */
-    public function deleteWebhook(string $webhookId): void
+    public function deleteWebhook(int $webhookId): ResponseAccess
     {
-        $query = '
-        mutation webhookSubscriptionDelete($id: ID!) {
-            webhookSubscriptionDelete(id: $id) {
-                userErrors {
-                    field
-                    message
-                }
-                deletedWebhookSubscriptionId
-            }
-        }
-        ';
+        // Fire the request
+        $response = $this->doRequest(
+            ApiMethod::DELETE(),
+            "/admin/webhooks/{$webhookId}.json"
+        );
 
-        $variables = [
-            'id' => $webhookId,
-        ];
-
-        $this->doRequestGraphQL($query, $variables);
+        return $response['body'];
     }
 
     /**
@@ -469,7 +428,7 @@ class ApiHelper implements IApiHelper
      *
      * @param ApiMethod $method  The HTTP method.
      * @param string    $path    The endpoint path.
-     * @param ?array    $payload The optional payload to send to the endpoint.
+     * @param array     $payload The optional payload to send to the endpoint.
      *
      * @throws RequestException
      *
@@ -500,7 +459,7 @@ class ApiHelper implements IApiHelper
      *
      * @return array
      */
-    protected function doRequestGraphQL(string $query, array $payload = []): array
+    protected function doRequestGraphQL(string $query, array $payload = null)
     {
         $response = $this->api->graph($query, $payload);
         if ($response['errors'] !== false) {
@@ -545,7 +504,7 @@ class ApiHelper implements IApiHelper
                 return Arr::get($refererQueryParams, 'shop');
             },
         ];
-        foreach ($options as $method => $fn) {
+        foreach ($options as $fn) {
             $result = $fn();
             if (! is_null($result)) {
                 return NullableShopDomain::fromNative($result);

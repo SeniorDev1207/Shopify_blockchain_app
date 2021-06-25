@@ -24,7 +24,7 @@ class ShopModelTest extends TestCase
 
         $this->assertInstanceOf(ShopId::class, $shop->getId());
         $this->assertInstanceOf(ShopDomain::class, $shop->getDomain());
-        $this->assertInstanceOf(AccessToken::class, $shop->getToken());
+        $this->assertInstanceOf(AccessToken::class, $shop->getAccessToken());
         $this->assertFalse($shop->isGrandfathered());
         $this->assertFalse($shop->isFreemium());
         $this->assertCount(0, $shop->charges);
@@ -50,7 +50,7 @@ class ShopModelTest extends TestCase
         $this->assertTrue($shop->hasOfflineAccess());
     }
 
-    public function testNamespacingAndFreemium()
+    public function testNamespacingAndFreemium(): void
     {
         $this->app['config']->set('shopify-app.billing_freemium_enabled', true);
         $this->app['config']->set('shopify-app.namespace', 'app');

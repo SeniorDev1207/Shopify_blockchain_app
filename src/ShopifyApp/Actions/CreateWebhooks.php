@@ -49,9 +49,9 @@ class CreateWebhooks
          *
          * @return bool
          */
-        $exists = static function (array $webhook, ResponseAccess $webhooks): bool {
-            foreach (data_get($webhooks, 'data.webhookSubscriptions.container.edges', []) as $shopWebhook) {
-                if (data_get($shopWebhook, 'node.endpoint.callbackUrl') === $webhook['address']) {
+        $exists = function (array $webhook, ResponseAccess $webhooks): bool {
+            foreach ($webhooks as $shopWebhook) {
+                if ($shopWebhook['address'] === $webhook['address']) {
                     // Found the webhook in our list
                     return true;
                 }
@@ -82,10 +82,10 @@ class CreateWebhooks
         }
 
         // Delete unused webhooks
-        foreach (data_get($webhooks, 'data.webhookSubscriptions.container.edges', []) as $webhook) {
-            if (! in_array(data_get($webhook, 'node.endpoint.callbackUrl'), $used)) {
+        foreach ($webhooks as $webhook) {
+            if (! in_array($webhook->address, $used)) {
                 // Webhook should be deleted
-                $apiHelper->deleteWebhook(data_get($webhook, 'node.id'));
+                $apiHelper->deleteWebhook($webhook->id);
                 $deleted[] = $webhook;
             }
         }

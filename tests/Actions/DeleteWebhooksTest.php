@@ -26,8 +26,8 @@ class DeleteWebhooksTest extends TestCase
         $this->setApiStub();
         ApiStub::stubResponses([
             'get_webhooks',
-            'delete_webhook',
-            'delete_webhook',
+            'empty',
+            'empty',
         ]);
 
         // Create the shop
