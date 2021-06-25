@@ -10,14 +10,11 @@
 */
 
 use Illuminate\Support\Facades\Route;
-use Osiset\ShopifyApp\Http\Controllers\AuthController;
-use Osiset\ShopifyApp\Http\Controllers\BillingController;
-use Osiset\ShopifyApp\Http\Controllers\HomeController;
-use Osiset\ShopifyApp\Http\Controllers\ItpController;
-use Osiset\ShopifyApp\Util;
+use function Osiset\ShopifyApp\getShopifyConfig;
+use function Osiset\ShopifyApp\registerPackageRoute;
 
 // Check if manual routes override is to be use
-$manualRoutes = Util::getShopifyConfig('manual_routes');
+$manualRoutes = getShopifyConfig('manual_routes');
 
 if ($manualRoutes) {
     // Get a list of route names to exclude
@@ -25,7 +22,7 @@ if ($manualRoutes) {
 }
 
 // Route which require ITP checks
-Route::group(['prefix' => Util::getShopifyConfig('prefix'), 'middleware' => ['itp', 'web']], function () use ($manualRoutes) {
+Route::group(['prefix' => getShopifyConfig('prefix'), 'middleware' => ['itp', 'web']], function () use ($manualRoutes) {
     /*
     |--------------------------------------------------------------------------
     | Home Route
@@ -36,13 +33,13 @@ Route::group(['prefix' => Util::getShopifyConfig('prefix'), 'middleware' => ['it
     |
     */
 
-    if (Util::registerPackageRoute('home', $manualRoutes)) {
+    if (registerPackageRoute('home', $manualRoutes)) {
         Route::get(
             '/',
-            HomeController::class.'@index'
+            'Osiset\ShopifyApp\Http\Controllers\HomeController@index'
         )
         ->middleware(['auth.shopify', 'billable'])
-        ->name(Util::getShopifyConfig('route_names.home'));
+        ->name(getShopifyConfig('route_names.home'));
     }
 
     /*
@@ -54,19 +51,19 @@ Route::group(['prefix' => Util::getShopifyConfig('prefix'), 'middleware' => ['it
     |
     */
 
-    if (Util::registerPackageRoute('itp', $manualRoutes)) {
-        Route::get('/itp', ItpController::class.'@attempt')
-            ->name(Util::getShopifyConfig('route_names.itp'));
+    if (registerPackageRoute('itp', $manualRoutes)) {
+        Route::get('/itp', 'Osiset\ShopifyApp\Http\Controllers\ItpController@attempt')
+            ->name(getShopifyConfig('route_names.itp'));
     }
 
-    if (Util::registerPackageRoute('itp.ask', $manualRoutes)) {
-        Route::get('/itp/ask', ItpController::class.'@ask')
-            ->name(Util::getShopifyConfig('route_names.itp.ask'));
+    if (registerPackageRoute('itp.ask', $manualRoutes)) {
+        Route::get('/itp/ask', 'Osiset\ShopifyApp\Http\Controllers\ItpController@ask')
+            ->name(getShopifyConfig('route_names.itp.ask'));
     }
 });
 
 // Routes without ITP checks
-Route::group(['prefix' => Util::getShopifyConfig('prefix'), 'middleware' => ['web']], function () use ($manualRoutes) {
+Route::group(['prefix' => getShopifyConfig('prefix'), 'middleware' => ['web']], function () use ($manualRoutes) {
     /*
     |--------------------------------------------------------------------------
     | Authenticate Method
@@ -76,13 +73,13 @@ Route::group(['prefix' => Util::getShopifyConfig('prefix'), 'middleware' => ['we
     |
     */
 
-    if (Util::registerPackageRoute('authenticate', $manualRoutes)) {
+    if (registerPackageRoute('authenticate', $manualRoutes)) {
         Route::match(
             ['get', 'post'],
             '/authenticate',
-            AuthController::class.'@authenticate'
+            'Osiset\ShopifyApp\Http\Controllers\AuthController@authenticate'
         )
-        ->name(Util::getShopifyConfig('route_names.authenticate'));
+        ->name(getShopifyConfig('route_names.authenticate'));
     }
 
     /*
@@ -94,12 +91,12 @@ Route::group(['prefix' => Util::getShopifyConfig('prefix'), 'middleware' => ['we
     |
     */
 
-    if (Util::registerPackageRoute('authenticate.oauth', $manualRoutes)) {
+    if (registerPackageRoute('authenticate.oauth', $manualRoutes)) {
         Route::get(
             '/authenticate/oauth',
-            AuthController::class.'@oauth'
+            'Osiset\ShopifyApp\Http\Controllers\AuthController@oauth'
         )
-        ->name(Util::getShopifyConfig('route_names.authenticate.oauth'));
+        ->name(getShopifyConfig('route_names.authenticate.oauth'));
     }
 
     /*
@@ -111,14 +108,14 @@ Route::group(['prefix' => Util::getShopifyConfig('prefix'), 'middleware' => ['we
     |
     */
 
-    if (Util::registerPackageRoute('billing', $manualRoutes)) {
+    if (registerPackageRoute('billing', $manualRoutes)) {
         Route::get(
             '/billing/{plan?}',
-            BillingController::class.'@index'
+            'Osiset\ShopifyApp\Http\Controllers\BillingController@index'
         )
         ->middleware(['auth.shopify'])
         ->where('plan', '^([0-9]+|)$')
-        ->name(Util::getShopifyConfig('route_names.billing'));
+        ->name(getShopifyConfig('route_names.billing'));
     }
 
     /*
@@ -130,14 +127,14 @@ Route::group(['prefix' => Util::getShopifyConfig('prefix'), 'middleware' => ['we
     |
     */
 
-    if (Util::registerPackageRoute('billing.process', $manualRoutes)) {
+    if (registerPackageRoute('billing.process', $manualRoutes)) {
         Route::get(
             '/billing/process/{plan?}',
-            BillingController::class.'@process'
+            'Osiset\ShopifyApp\Http\Controllers\BillingController@process'
         )
         ->middleware(['auth.shopify'])
         ->where('plan', '^([0-9]+|)$')
-        ->name(Util::getShopifyConfig('route_names.billing.process'));
+        ->name(getShopifyConfig('route_names.billing.process'));
     }
 
     /*
@@ -149,13 +146,13 @@ Route::group(['prefix' => Util::getShopifyConfig('prefix'), 'middleware' => ['we
     |
     */
 
-    if (Util::registerPackageRoute('billing.usage_charge', $manualRoutes)) {
+    if (registerPackageRoute('billing.usage_charge', $manualRoutes)) {
         Route::match(
             ['get', 'post'],
             '/billing/usage-charge',
-            BillingController::class.'@usageCharge'
+            'Osiset\ShopifyApp\Http\Controllers\BillingController@usageCharge'
         )
         ->middleware(['auth.shopify'])
-        ->name(Util::getShopifyConfig('route_names.billing.usage_charge'));
+        ->name(getShopifyConfig('route_names.billing.usage_charge'));
     }
 });

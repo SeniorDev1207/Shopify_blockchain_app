@@ -1,12 +1,11 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Osiset\ShopifyApp\Http\Controllers\ApiController;
-use Osiset\ShopifyApp\Http\Controllers\WebhookController;
-use Osiset\ShopifyApp\Util;
+use function Osiset\ShopifyApp\getShopifyConfig;
+use function Osiset\ShopifyApp\registerPackageRoute;
 
 // Check if manual routes override is to be use
-$manualRoutes = Util::getShopifyConfig('manual_routes');
+$manualRoutes = getShopifyConfig('manual_routes');
 
 if ($manualRoutes) {
     // Get a list of route names to exclude
@@ -23,21 +22,21 @@ Route::group(['middleware' => ['api']], function () use ($manualRoutes) {
     |
     */
 
-    if (Util::registerPackageRoute('api', $manualRoutes)) {
+    if (registerPackageRoute('api', $manualRoutes)) {
         Route::group(['prefix' => 'api', 'middleware' => ['auth.token']], function () {
             Route::get(
                 '/',
-                ApiController::class.'@index'
+                'Osiset\ShopifyApp\Http\Controllers\ApiController@index'
             );
 
             Route::get(
                 '/me',
-                ApiController::class.'@getSelf'
+                'Osiset\ShopifyApp\Http\Controllers\ApiController@getSelf'
             );
 
             Route::get(
                 '/plans',
-                ApiController::class.'@getPlans'
+                'Osiset\ShopifyApp\Http\Controllers\ApiController@getPlans'
             );
         });
     }
@@ -51,12 +50,12 @@ Route::group(['middleware' => ['api']], function () use ($manualRoutes) {
     |
     */
 
-    if (Util::registerPackageRoute('webhook', $manualRoutes)) {
+    if (registerPackageRoute('webhook', $manualRoutes)) {
         Route::post(
             '/webhook/{type}',
-            WebhookController::class.'@handle'
+            'Osiset\ShopifyApp\Http\Controllers\WebhookController@handle'
         )
         ->middleware('auth.webhook')
-        ->name(Util::getShopifyConfig('route_names.webhook'));
+        ->name(getShopifyConfig('route_names.webhook'));
     }
 });

@@ -4,7 +4,8 @@ namespace Osiset\ShopifyApp\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
-use Osiset\ShopifyApp\Util;
+use function Osiset\ShopifyApp\createHmac;
+use function Osiset\ShopifyApp\getShopifyConfig;
 
 /**
  * Handles validating a usage charge.
@@ -46,12 +47,12 @@ class StoreUsageCharge extends FormRequest
             unset($data['signature']);
 
             // Confirm the charge hasn't been tampered with
-            $signatureLocal = Util::createHmac(
+            $signatureLocal = createHmac(
                 [
                     'data'       => $data,
                     'buildQuery' => true,
                 ],
-                Util::getShopifyConfig('api_secret')
+                getShopifyConfig('api_secret')
             );
             if (! hash_equals($signature, $signatureLocal)) {
                 // Possible tampering

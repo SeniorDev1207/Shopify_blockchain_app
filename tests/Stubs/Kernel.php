@@ -2,18 +2,6 @@
 
 namespace Osiset\ShopifyApp\Test\Stubs;
 
-use Illuminate\Auth\Middleware\Authenticate;
-use Illuminate\Auth\Middleware\AuthenticateWithBasicAuth;
-use Illuminate\Auth\Middleware\Authorize;
-use Illuminate\Routing\Middleware\SubstituteBindings;
-use Illuminate\Routing\Middleware\ThrottleRequests;
-use Orchestra\Testbench\Http\Middleware\RedirectIfAuthenticated;
-use Osiset\ShopifyApp\Http\Middleware\AuthProxy;
-use Osiset\ShopifyApp\Http\Middleware\AuthShopify;
-use Osiset\ShopifyApp\Http\Middleware\AuthToken;
-use Osiset\ShopifyApp\Http\Middleware\AuthWebhook;
-use Osiset\ShopifyApp\Http\Middleware\Billable;
-
 class Kernel extends \Orchestra\Testbench\Http\Kernel
 {
     /**
@@ -24,18 +12,18 @@ class Kernel extends \Orchestra\Testbench\Http\Kernel
      * @var array
      */
     protected $routeMiddleware = [
-        'auth'       => Authenticate::class,
-        'auth.basic' => AuthenticateWithBasicAuth::class,
-        'bindings'   => SubstituteBindings::class,
-        'can'        => Authorize::class,
-        'guest'      => RedirectIfAuthenticated::class,
-        'throttle'   => ThrottleRequests::class,
+        'auth'       => \Illuminate\Auth\Middleware\Authenticate::class,
+        'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
+        'bindings'   => \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        'can'        => \Illuminate\Auth\Middleware\Authorize::class,
+        'guest'      => Middleware\RedirectIfAuthenticated::class,
+        'throttle'   => \Illuminate\Routing\Middleware\ThrottleRequests::class,
 
         // Added for testing
-        'auth.shopify' => AuthShopify::class,
-        'auth.token'   => AuthToken::class,
-        'auth.webhook' => AuthWebhook::class,
-        'auth.proxy'   => AuthProxy::class,
-        'billable'     => Billable::class,
+        'auth.shopify' => \Osiset\ShopifyApp\Http\Middleware\AuthShopify::class,
+        'auth.token'   => \Osiset\ShopifyApp\Http\Middleware\AuthToken::class,
+        'auth.webhook' => \Osiset\ShopifyApp\Http\Middleware\AuthWebhook::class,
+        'auth.proxy'   => \Osiset\ShopifyApp\Http\Middleware\AuthProxy::class,
+        'billable'     => \Osiset\ShopifyApp\Http\Middleware\Billable::class,
     ];
 }

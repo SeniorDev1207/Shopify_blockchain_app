@@ -103,7 +103,12 @@ class ShopifyAppProvider extends ServiceProvider
 
             // Queriers
             IShopQuery::class => [self::CSINGLETON, function () {
-                return new ShopQuery();
+                $model = $this->app['config']->get('auth.providers.users.model');
+                $modelInstance = new $model();
+
+                return new ShopQuery(
+                    $modelInstance
+                );
             }],
             IPlanQuery::class => [self::CSINGLETON, function () {
                 return new PlanQuery();

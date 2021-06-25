@@ -53,7 +53,7 @@ class CookieHelperTest extends TestCase
     /**
      * Originally from @jedimdan in previous iteration.
      */
-    public function testSameSiteCookie(): void
+    public function testSameSiteCookie()
     {
         foreach ($this->badUserAgents as $agent) {
             $_SERVER['HTTP_USER_AGENT'] = $agent;

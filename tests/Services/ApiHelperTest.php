@@ -15,7 +15,6 @@ use Osiset\ShopifyApp\Objects\Transfers\UsageChargeDetails as UsageChargeDetails
 use Osiset\ShopifyApp\Objects\Values\ChargeReference;
 use Osiset\ShopifyApp\Test\Stubs\Api as ApiStub;
 use Osiset\ShopifyApp\Test\TestCase;
-use Osiset\ShopifyApp\Util;
 
 class ApiHelperTest extends TestCase
 {
@@ -40,8 +39,8 @@ class ApiHelperTest extends TestCase
         $api = $this->api->make()->getApi();
 
         $this->assertInstanceOf(BasicShopifyAPI::class, $api);
-        $this->assertSame(Util::getShopifyConfig('api_secret'), $this->app['config']->get('shopify-app.api_secret'));
-        $this->assertSame(Util::getShopifyConfig('api_key'), $this->app['config']->get('shopify-app.api_key'));
+        $this->assertSame(env('SHOPIFY_API_SECRET'), $this->app['config']->get('shopify-app.api_secret'));
+        $this->assertSame(env('SHOPIFY_API_KEY'), $this->app['config']->get('shopify-app.api_key'));
         $this->assertSame($this->app['config']->get('shopify-app.api_version'), '2020-01');
     }
 
@@ -238,7 +237,7 @@ class ApiHelperTest extends TestCase
 
     public function testErrors(): void
     {
-        $this->expectExceptionObject(new ApiException('Unknown error', 0));
+        $this->expectException(ApiException::class);
 
         // Create a shop
         $shop = factory($this->model)->create();
@@ -252,7 +251,7 @@ class ApiHelperTest extends TestCase
 
     public function testErrorsGraphQL(): void
     {
-        $this->expectExceptionObject(new Exception('Error!', 0));
+        $this->expectException(Exception::class);
 
         // Create a shop
         $shop = factory($this->model)->create();

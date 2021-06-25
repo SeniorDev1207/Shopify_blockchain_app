@@ -95,7 +95,7 @@ class AuthWebhookTest extends TestCase
 
         // Run the middleware
         $called = false;
-        ($this->app->make(AuthWebhookMiddleware::class))->handle(request(), function () use (&$called) {
+        $response = ($this->app->make(AuthWebhookMiddleware::class))->handle(request(), function () use (&$called) {
             $called = true;
         });
 

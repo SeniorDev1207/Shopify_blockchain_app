@@ -48,7 +48,7 @@ class ShopTest extends TestCase
     public function testShopGetAll(): void
     {
         // Create a shop
-        factory($this->model)->create();
+        $shop = factory($this->model)->create();
 
         // Ensure we get a result
         $this->assertCount(1, $this->query->getAll());

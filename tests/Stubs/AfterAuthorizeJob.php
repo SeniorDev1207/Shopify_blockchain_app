@@ -1,6 +1,6 @@
 <?php
 
-namespace Osiset\ShopifyApp\Test\Stubs;
+namespace App\Jobs;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;

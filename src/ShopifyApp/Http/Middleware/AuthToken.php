@@ -4,10 +4,12 @@ namespace Osiset\ShopifyApp\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use function Osiset\ShopifyApp\base64url_decode;
+use function Osiset\ShopifyApp\base64url_encode;
 use Osiset\ShopifyApp\Exceptions\HttpException;
+use function Osiset\ShopifyApp\getShopifyConfig;
 use Osiset\ShopifyApp\Objects\Values\ShopDomain;
 use Osiset\ShopifyApp\Services\ShopSession;
-use Osiset\ShopifyApp\Util;
 
 class AuthToken
 {
@@ -63,7 +65,7 @@ class AuthToken
         }
 
         $parts = explode('.', $token);
-        $body = json_decode(Util::base64UrlDecode($parts[1]));
+        $body = json_decode(base64url_decode($parts[1]));
 
         if (! $body ||
             ! isset($body->iss) ||
@@ -78,7 +80,7 @@ class AuthToken
             throw new HttpException('Malformed token', 400);
         }
 
-        if ($now > $body->exp || $now < $body->nbf || $now < $body->iat) {
+        if (($now > $body->exp) || ($now < $body->nbf) || ($now < $body->iat)) {
             throw new HttpException('Expired token', 403);
         }
 
@@ -86,7 +88,7 @@ class AuthToken
             throw new HttpException('Invalid token', 400);
         }
 
-        if ($body->aud !== Util::getShopifyConfig('api_key')) {
+        if ($body->aud !== getShopifyConfig('api_key')) {
             throw new HttpException('Invalid token', 400);
         }
 
@@ -115,16 +117,16 @@ class AuthToken
 
         // Get the shop
         $shop = null;
-        $body = json_decode(Util::base64UrlDecode($parts[1]));
+        $body = json_decode(base64url_decode($parts[1]));
         if (isset($body->dest)) {
             $url = parse_url($body->dest);
-            $shop = $url['host'] ?? null;
+            $shop = isset($url['host']) ? $url['host'] : null;
         }
 
-        $secret = Util::getShopifyConfig('api_secret', $shop);
+        $secret = getShopifyConfig('api_secret', $shop);
         $hmac = hash_hmac('sha256', $check, $secret, true);
-        $encoded = Util::base64UrlEncode($hmac);
+        $encoded = base64url_encode($hmac);
 
-        return hash_equals($encoded, $signature);
+        return $encoded === $signature;
     }
 }
