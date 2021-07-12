@@ -50,12 +50,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Osiset\\ShopifyApp\\": "src/"
+            "Osiset\\ShopifyApp\\": "src/ShopifyApp"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Osiset\\ShopifyApp\\Test\\": "tests/"
+            "Osiset\\ShopifyApp\\Test\\": "tests"
         }
     },
     "minimum-stability": "dev",
