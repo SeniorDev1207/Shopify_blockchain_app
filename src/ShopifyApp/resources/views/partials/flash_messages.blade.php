@@ -2,7 +2,7 @@
     document.addEventListener('DOMContentLoaded', function () {
         var Toast = actions.Toast;
 
-        @if (isset($flashNotice) || request()->has('notice'))
+        @if (request()->has('notice') || isset($flashNotice))
             var toastNotice = Toast.create(app, {
                 message: "{{ request()->get('notice', $flashNotice ?? null) }}",
                 duration: 3000,
@@ -10,7 +10,7 @@
             toastNotice.dispatch(Toast.Action.SHOW);
         @endif
 
-        @if (isset($flashError) || request()->has('error'))
+        @if (request()->has('error') || isset($flashError))
             var toastNotice = Toast.create(app, {
                 message: "{{ request()->get('error', $flashError ?? null) }}",
                 duration: 3000,

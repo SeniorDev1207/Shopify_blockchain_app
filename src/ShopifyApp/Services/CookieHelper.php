@@ -67,21 +67,23 @@ class CookieHelper
         $browser = $this->getBrowserDetails();
         $platform = $this->getPlatformDetails();
 
-        if ($browser['major'] >= 67 && $this->agent->is('Chrome')) {
+        if ($this->agent->is('Chrome') && $browser['major'] >= 67) {
             $compatible = true;
         }
 
-        if ($platform['major'] > 12 && $this->agent->is('iOS')) {
+        if ($this->agent->is('iOS') && $platform['major'] > 12) {
             $compatible = true;
         }
 
-        if ($platform['float'] > 10.14 &&
-            $this->agent->is('OS X') && $this->agent->is('Safari') && ! $this->agent->is('iOS')
+        if ($this->agent->is('OS X') && $this->agent->is('Safari') && ! $this->agent->is('iOS') &&
+            $platform['float'] > 10.14
         ) {
             $compatible = true;
         }
 
-        if ($browser['float'] > 12.13 && $this->agent->is('UCBrowser')) {
+        if ($this->agent->is('UCBrowser') &&
+            $browser['float'] > 12.13
+        ) {
             $compatible = true;
         }
 
